@@ -1,0 +1,435 @@
+<template>
+    <template if:true={processing}>
+        <lightning-spinner alternative-text="Loading" style="position:fixed" size="medium" variant="brand"></lightning-spinner>
+    </template>
+    <template if:true={clProgressPopUp}>
+        <section role="dialog" tabindex="-1" aria-labelledby="modal-heading-01" aria-modal="true" aria-describedby="modal-content-id-1" class="slds-modal slds-fade-in-open slds-modal_large">
+            <div class="slds-modal__container custom-modal-style-show slds-large">
+                <header class="slds-modal__header">
+                    <button class="slds-button slds-button_icon slds-modal__close slds-button_icon-inverse" title="Close" onclick={hideModalBox}>
+                        <lightning-icon icon-name="utility:close"
+                            alternative-text="close"
+                            variant="inverse"
+                            size="small" ></lightning-icon>
+                            <span class="slds-assistive-text">Close</span>
+                    </button>
+                    <h1  class="slds-modal__title slds-hyphenate">{loanOfficersName}</h1>
+                </header>
+                <div class="slds-modal__content slds-p-around_medium">
+                    <template lwc:if={isDataPresent}>
+                        <lightning-datatable
+                            data={visibleData}
+                            columns={visibleColumns}
+                            key-field="Id"
+                            hide-checkbox-column="true"
+                            sorted-by={sortedBy}
+                            sorted-direction={sortedDirection}
+                            onsort={handleSort}
+                        >
+                        </lightning-datatable>
+                    </template>
+                     <template lwc:else>
+                        <div class="slds-text-align_center slds-text-heading_small" style="color: red;">No Records Founds.</div>
+                    </template> 
+                </div>
+                <div class="slds-modal__footer" style="padding:2.5px; padding-left:23px; padding-right:23px">
+                    <template lwc:if={isDataPresent}>
+                        <div style="background: rgb(243, 243, 243);height:20px;" class="slds-text-align_center">        
+                            <div class="slds-grid" style="height:2.75em;float: right;">
+                                <button class="slds-button slds-button_icon icon_button icon_button_disabled" title="First" role="first" onclick={handleFirstPage} disabled={disableFirstAndPrevious}>
+                                    <svg viewBox="0 0 1024 1024" class="icon">
+                                        <g><path d="M1024 1024 256 512 1024 0Z"  /><path d="M0 128l256 0 0 768-256 0 0-768Z"  /></g>
+                                    </svg>  
+                                </button>
+                                <button class="slds-button slds-button_icon icon_button icon_button_disabled" title="Previous" role="previous" onclick={handlePreviousPage} disabled={disableFirstAndPrevious}>
+                                    <svg viewBox="0 0 1024 1024" class="icon">
+                                        <g><path d="M1024 1024 256 512 1024 0Z"  /></g>
+                                    </svg>
+                                </button>
+                                <span class="vcenter currentpage">{currentPage}</span>
+                                <span class="vcenter" style="font-weight: 500;">&nbsp;/&nbsp;{totalPages}</span>
+                                <button class="slds-button slds-button_icon icon_button" title="Next" role="next" onclick={handleNextPage} disabled={disableNextAndLast}>
+                                    <svg viewBox="0 0 1024 1024" class="icon">
+                                        <g><path d="M0 0 768 512 0 1024Z"  /></g>
+                                    </svg>
+                                </button>
+                                <button class="slds-button slds-button_icon icon_button" title="Last" role="last" onclick={handleLastPage} disabled={disableNextAndLast}>
+                                    <svg viewBox="0 0 1024 1024" class="icon">
+                                        <g><path d="M0 0 768 512 0 1024Z"  /><path d="M768 128l256 0 0 768-256 0 0-768Z"  /></g>
+                                    </svg>
+                                </button>
+                            </div>
+                        </div>
+                    </template> 
+                   <table>
+                        <tr class="slds-hint-parent" style="font-size: 11px;">
+                            <td class="totClass" colspan="8">
+                                <div class="slds-truncate slds-text-heading_large" title="">Total</div>
+                            </td>
+                            <td class="totClass" style="text-align: right;" colspan="5">
+                                <div class="slds-truncate slds-text-heading_large" title="">
+                                    <template if:true={clProgressPopUp}>
+                                        <template lwc:if={signedIn}>
+                                            <p class="slds-text-heading_large" style="font-weight: 600;">{numLoiSigned}
+                                                {loan}
+                                                for $<lightning-formatted-number value={totalLOISignedAmt} currency-code="USD"></lightning-formatted-number></p>
+                                        </template>
+                                        <template lwc:elseif={closedYr}>
+                                            <p class="slds-text-heading_large" style="font-weight: 600;">{numLoansClosedThisYr}
+                                                {loan}
+                                                for $<lightning-formatted-number value={totalLoansClosedThisYrAmt} currency-code="USD"></lightning-formatted-number></p>
+                                        </template>
+                                        <template lwc:elseif={paidOff}>
+                                            <p class="slds-text-heading_large" style="font-weight: 600;">{totPayoffThisYearNum}
+                                                {loan}
+                                                fors $<lightning-formatted-number value={totPayoffThisYearAmt} currency-code="USD"></lightning-formatted-number></p>
+                                        </template>
+                                        <template lwc:elseif={isApproved}>
+                                            <p class="slds-text-heading_large" style="font-weight: 600;">{totalLoanApporvedCount}
+                                                {loan}
+                                                for $<lightning-formatted-number value={totalLoanApprovedAmount} currency-code="USD"></lightning-formatted-number></p>
+                                        </template>
+                                    </template> 
+                                </div>
+                            </td>
+                        </tr>
+                    </table>
+                 </div>
+            </div>
+        </section>
+        <div class="slds-backdrop slds-backdrop_open"></div>
+    </template>
+    <div  class="main-div">
+        <lightning-card style="--sds-c-card-heading-color: white; width: 100%;" class="slds-text-color_inverse custom-card-title">
+            <div class ="box-second">
+                <div class="slds-card__header">
+                    <h2 class="card-title-main slds-text-heading_small" style="font-weight: 700;">
+                        {currentYear} PULL-THROUGH RESULTS 
+                    </h2>
+                </div>
+                <lightning-layout style="color:black">
+                    <lightning-layout-item padding="around-small" style="padding:0" size="12">
+                      <div class="annual_result_content">
+                        <div  style="background-color:white;" class="slds-box slds-box_xx-small box-wrp">
+                            <table class="slds-table slds-no-row-hover slds-table_cell-buffer slds-table_fixed-layout chart_component_2_table">
+                                <thead>
+                                    <tr class="slds-line-height_reset" >
+                                        <th scope="col" class="slds-text-title_caps slds-text-heading_medium month" style="width: 40%;border-right:0.50px solid #d3d3d3; background-color:white">
+                                        </th>
+                                        <th scope="col" class="slds-text-title_caps" style="width: 25%;border-right:0.50px solid #d3d3d3; background-color:#d3d3d3">
+                                            <p style="font-size: 0.7rem; text-align:center; font-weight:600;">Pull-Through %<br/> (Units)</p>
+                                        </th>
+                                        <th scope="col" class="slds-text-title_caps" style="width: 35%;border-right:0.50px solid #d3d3d3; background-color:#d3d3d3">
+                                            <p style="font-size: 0.7rem; text-align:center; font-weight:600;">Pull-Through %<br/> ($'s')</p>
+                                        </th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr class="slds-hint-parent month-row" data-month="0">
+                                        <td class="slds-text-title" style="border-right:0.50px solid #d3d3d3">
+                                            <div style="font-size:small; white-space:nowrap;  display:flex; align-items:center;">
+                                                <p class="card-title-left">LOI's Signed </p>
+                                                <div class="tooltip" style="padding-left: 10px;">
+                                                    <lightning-icon icon-name="utility:info_alt" class="blue-background-color" size="x-small"></lightning-icon>
+                                                    <span class="tooltiptext">Loans in this section only include Organic Renovo loans with an "LOI Originally Signed Date" of THIS YEAR</span>                      
+                                                </div>
+                                            </div>
+                                        </td>
+                                        <td class="slds-text-title" style="border-right:0.50px solid #d3d3d3">
+                                            <div class="inside-box-grey-double" style="width: 100%; display:flex;justify-content:center" data-id="loansSigedIn" onclick={getAllLOIOpps}>
+                                                <div class="inside-box">
+                                                    <p class="card-sub-title-bold-text"><lightning-formatted-number value={numLoiSigned} currency-code="USD"></lightning-formatted-number></p>
+                                                </div>
+                                            </div>
+                                        </td>
+                                        <td class="slds-text-title">
+                                            <div class="inside-box-grey-double"  style="width: 100%; display:flex;justify-content:center">
+                                                <div class="inside-box" data-id="loansSigedIn" onclick={getAllLOIOpps}>
+                                                    <center class="card-title-text" style="cursor:pointer;"><span class="card-sub-title-bold-text" style="font-weight: 600;"> $<lightning-formatted-number value={totalLOISignedAmt} currency-code="USD"></lightning-formatted-number></span></center>
+                                                </div>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                    <tr class="slds-hint-parent month-row" data-month="0">
+                                        <td class="slds-text-title" style="border-right:0.50px solid #d3d3d3">
+                                            <div style="font-size:small; white-space:nowrap;  display:flex; align-items:center">
+                                                <p class="card-title-left">Loans Approved</p>
+                                                <div class="tooltip" style="padding-left: 10px;">
+                                                    <lightning-icon icon-name="utility:info_alt" class="blue-background-color" size="x-small"></lightning-icon>
+                                                    <span class="tooltiptext">Loans in this section only include Organic Renovo loans with a "Credit Approval Date" of THIS YEAR.</span>
+                                                </div>
+                                            </div>
+                                        </td>
+                                        <td class="slds-text-title" style="border-right:0.50px solid #d3d3d3">
+                                            <div class="inside-box-grey-double" style="width: 100%; display:flex;justify-content:center" data-id="loansApporovedIn" onclick={getAllLOIOpps}>
+                                                <div class="inside-box">
+                                                    <p class="card-sub-title-bold-text"><lightning-formatted-number value={totalLoanApporvedCount} currency-code="USD"></lightning-formatted-number></p>
+                                                </div>
+                                            </div>
+                                        </td>
+                                        <td class="slds-text-title">
+                                            <div class="inside-box-grey-double"  data-id="loansSigedIn" style="width: 100%; display:flex;justify-content:center">
+                                                <div class="inside-box" data-id="loansApporovedIn" onclick={getAllLOIOpps}>
+                                                    <center class="card-title-text" style="cursor:pointer;"><span class="card-sub-title-bold-text" style="font-weight: 600;"> $<lightning-formatted-number value={totalLoanApprovedAmount} currency-code="USD"></lightning-formatted-number></span></center>
+                                                </div>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                    <tr class="slds-hint-parent month-row">
+                                        <td class="slds-text-title" style="border-right:0.50px solid #d3d3d3"></td>
+                                        <td class="slds-text-title" style="border-right:0.50px solid #d3d3d3">
+                                            <div style="width: 100%; display:flex;justify-content:center">
+                                                <p style="font-size: 0.7rem; text-align:center; font-weight:600">LOI to Approval<br/>{pullThrPerForApprovedUnit}%</p>
+                                            </div>
+                                        </td>
+                                        <td class="slds-text-title">
+                                            <div style="width: 100%; display:flex;justify-content:center">
+                                                <p style="font-size: 0.7rem; text-align:center; font-weight:600">LOI to Approval<br/>{pullThroughPerForApproved}%</p>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                    <tr class="slds-hint-parent month-row" data-month="0">
+                                        <td class="slds-text-title" style="border-right:0.50px solid #d3d3d3">
+                                            <div style="font-size:small; white-space:nowrap;  display:flex; align-items:center">
+                                                <p class="card-title-left">Loans Closed </p>
+                                                <div class="tooltip" style="padding-left: 10px;">
+                                                    <lightning-icon icon-name="utility:info_alt" class="blue-background-color" size="x-small"></lightning-icon>
+                                                    <span class="tooltiptext"> Loans in this section only include Organic Renovo loans with a "Close Date" of THIS YEAR, in the "Servicing" or "Loan Paid Off" stages</span>
+                                                </div>
+                                            </div>
+                                        </td>
+                                        <td class="slds-text-title" style="border-right:0.50px solid #d3d3d3">
+                                            <div class="inside-box-grey-double" style="width: 100%; display:flex;justify-content:center">
+                                                <div class="inside-box" data-id="loansClosedInYear" onclick={getAllLOIOpps}>
+                                                    <p class="card-sub-title-bold-text" style="font-weight: 600;"><lightning-formatted-number value={numLoansClosedThisYr} currency-code="USD"></lightning-formatted-number></p>
+                                                </div> 
+                                            </div>   
+                                        </td>
+                                        <td class="slds-text-title">
+                                            <div class="inside-box-grey-double" data-id="loansSigedIn" style="width: 100%; display:flex;justify-content:center">
+                                                <div class="inside-box" data-id="loansClosedInYear" onclick={getAllLOIOpps}>
+                                                    <center class="card-title-text" style="cursor:pointer;"><span class="card-sub-title-bold-text" style="font-weight: 600;"> $<lightning-formatted-number value={totalLoansClosedThisYrAmt} currency-code="USD"></lightning-formatted-number></span></center>
+                                                </div> 
+                                            </div>
+                                        </td>
+                                    </tr>
+                                    <tr class="slds-hint-parent month-row">
+                                        <td class="slds-text-title" style="border-right:0.50px solid #d3d3d3"></td>
+                                        <td class="slds-text-title" style="border-right:0.50px solid #d3d3d3">
+                                            <div style="width: 100%; display:flex;justify-content:center">
+                                                <p style="font-size: 0.7rem; text-align:center; font-weight:600">Approval to Close<br/> {pullThrPerForClosedUnit}%</p>
+                                            </div>
+                                        </td>
+                                        <td class="slds-text-title">
+                                            <div style="width: 100%; display:flex;justify-content:center">
+                                                <p style="font-size: 0.7rem; text-align:center; font-weight:600">Approval to Close<br/> {pullThroughPerForClosed}%</p>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                    <tr class="slds-hint-parent month-row" data-month="0" style="border-top: 3px solid black; background-color:#E4F2FF;">
+                                        <td class="slds-text-title"  style="border-right:0.50px solid #d3d3d3">
+                                            <div style="font-size:small;cursor:pointer;white-space:nowrap; display:flex; align-items:center" data-id="loansPaidOffInYear" onclick={getAllLOIOpps}> 
+                                                <p class="card-title-left">LOI to Close %</p>
+                                                <div class="tooltip" style="padding-left: 10px;">
+                                                    <lightning-icon icon-name="utility:info_alt" class="blue-background-color" size="x-small"></lightning-icon>
+                                                    <span class="tooltiptext"> These %'s represent the pull-through rate from "LOI to Close</span>
+                                                </div>
+                                            </div> 
+                                        </td>
+                                        <td class="slds-text-title" style="border-right:0.50px solid #d3d3d3">
+                                            <div class="inside-box-grey-double" data-id="loansSigedIn" style="width: 100%; display:flex;justify-content:center;cursor: default !important;">
+                                                <div class="inside-box" data-id="loansClosedInYear" onclick={getAllLOIOpps} style="display:flex;align-items:center; justify-content:center;cursor: default !important;">
+                                                    {pullThrPerForTotalUnit} % 
+                                                </div>  
+                                            </div>
+                                        </td>
+                                        <td class="slds-text-title">
+                                            <div class="inside-box-grey-double" data-id="loansSigedIn" style="width: 100%; display:flex;justify-content:center;cursor: default !important;">
+                                                <div class="inside-box" style="display:flex;align-items:center; justify-content:center;cursor: default !important;">
+                                                    {pullThroughPerForTotal}%
+                                                </div>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                           <!---<div class="slds-grid" style="padding: 0rem; margin: 0rem; background-color: white; font-weight:600">
+                              <div class="slds-size_1-of-2" style="width: 35%;"></div>
+                                <div class="slds-size_1-of-2" style="width: 65%;">
+                                    <div class="slds-grid" style="padding:0rem; margin:0rem">
+                                        <div class="slds-size_1-of-2" style="width:40%; position:relative; left:2rem">
+                                            <p style="font-size: 0.7rem; text-align:center; font-weight:600">Pull-Through %<br/> (Units)</p>
+                                        </div>
+                                        <div class="slds-size_1-of-2" style="width: 60%; position:relative; left:2rem">
+                                            <p style="font-size: 0.7rem; text-align:center; font-weight:600">Pull-Through %<br/> ($'s')</p>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="demo-only demo-only--sizing slds-grid">
+                                <div class="slds-size_1-of-3" style="width: 50%;">
+                                    <div style="font-size:small; white-space:nowrap;  display:flex; align-items:center; margin-bottom:3rem; margin-top:1.5rem">
+                                        <p class="card-title-left">LOI's Signed </p>
+                                        <div class="tooltip" style="padding-left: 10px;">
+                                            <lightning-icon icon-name="utility:info_alt" class="blue-background-color" size="x-small"></lightning-icon>
+                                            <span class="tooltiptext">Loans in this section only include Organic Renovo loans with an "LOI Originally Signed Date" of THIS YEAR</span>                      
+                                        </div>
+                                    </div>
+                                    <div style="font-size:small; white-space:nowrap;  display:flex; align-items:center;margin-bottom:3rem">
+                                        <p class="card-title-left">Loans Approved</p>
+                                        <div class="tooltip" style="padding-left: 10px;">
+                                            <lightning-icon icon-name="utility:info_alt" class="blue-background-color" size="x-small"></lightning-icon>
+                                            <span class="tooltiptext">Loans in this section only include Organic Renovo loans with a "Credit Approval Date" of THIS YEAR.</span>
+                                        </div>
+                                    </div>
+                                    <div style="font-size:small; white-space:nowrap;  display:flex; align-items:center">
+                                        <p class="card-title-left">Loans Closed </p>
+                                        <div class="tooltip" style="padding-left: 10px;">
+                                            <lightning-icon icon-name="utility:info_alt" class="blue-background-color" size="x-small"></lightning-icon>
+                                            <span class="tooltiptext"> Loans in this section only include Organic Renovo loans with a "Close Date" of THIS YEAR, in the "Servicing" or "Loan Paid Off" stages</span>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="slds-size_1-of-3" style="width: 20%;">
+                                    <div class="inside-box-grey-double" style="width: 36%;" data-id="loansSigedIn" onclick={getAllLOIOpps}>
+                                        <div class="inside-box">
+                                            <p class="card-sub-title-bold-text"><lightning-formatted-number value={numLoiSigned} currency-code="USD"></lightning-formatted-number></p>
+                                        </div>
+                                    </div>
+                                    <div class="inside-box-grey-double" style="width: 36%;" data-id="loansApporovedIn" onclick={getAllLOIOpps}>
+                                        <div class="inside-box">
+                                            <p class="card-sub-title-bold-text"><lightning-formatted-number value={totalLoanApporvedCount} currency-code="USD"></lightning-formatted-number></p>
+                                        </div>
+                                    </div>
+                                    <div class="inside-box-grey-double" style="width: 36%;">
+                                        <div class="inside-box" data-id="loansClosedInYear" onclick={getAllLOIOpps}>
+                                            <p class="card-sub-title-bold-text" style="font-weight: 600;"><lightning-formatted-number value={numLoansClosedThisYr} currency-code="USD"></lightning-formatted-number></p>
+                                        </div> 
+                                    </div>
+                                </div>
+                                <div class="slds-size_1-of-3" style="width:30%">
+                                    <div class="inside-box-grey-double"  style="margin-left: 0.25rem;width: 64%">
+                                        <div class="inside-box" data-id="loansSigedIn" onclick={getAllLOIOpps}>
+                                            <center class="card-title-text" style="cursor:pointer;"><span class="card-sub-title-bold-text" style="font-weight: 600;"> $<lightning-formatted-number value={totalLOISignedAmt} currency-code="USD"></lightning-formatted-number></span></center>
+                                        </div>
+                                    </div>
+                                    <div class="inside-box-grey-double"  data-id="loansSigedIn" style="margin-left: 0.25rem; width:64%">
+                                        <div class="inside-box" data-id="loansApporovedIn" onclick={getAllLOIOpps}>
+                                            <center class="card-title-text" style="cursor:pointer;"><span class="card-sub-title-bold-text" style="font-weight: 600;"> $<lightning-formatted-number value={totalLoanApprovedAmount} currency-code="USD"></lightning-formatted-number></span></center>
+                                        </div>
+                                    </div>
+                                    <div class="inside-box-grey-double" data-id="loansSigedIn" style="margin-left: 0.25rem; width:64%">
+                                        <div class="inside-box" data-id="loansClosedInYear" onclick={getAllLOIOpps}>
+                                            <center class="card-title-text" style="cursor:pointer;"><span class="card-sub-title-bold-text" style="font-weight: 600;"> $<lightning-formatted-number value={totalLoansClosedThisYrAmt} currency-code="USD"></lightning-formatted-number></span></center>
+                                        </div> 
+                                    </div>
+                                </div>
+                            </div>
+                        </div>-->
+                                <!--<div class="slds-size_1-of-3" style="font-size:small; white-space:nowrap;  display:flex; align-items:center"> 
+                                   
+                                </div>
+                                <div class="slds-size_1-of-" style="display: flex;">
+                                   
+                                   
+                                </div>
+                            </div>
+                        </div>
+                        <div  style="background-color:white;" class="slds-box slds-box_xx-small box-wrp">
+                            <div class="demo-only demo-only--sizing slds-grid">
+                                <div class="slds-size_1-of-2" style="font-size:small;white-space:nowrap;  display:flex; align-items:center"> 
+                                    <p class="card-title-left">Loans Approved</p>
+                                    <div class="tooltip" style="padding-left: 10px;">
+                                        <lightning-icon icon-name="utility:info_alt" class="blue-background-color" size="x-small"></lightning-icon>
+                                        <span class="tooltiptext">Loans in this section only include Organic Renovo loans with a "Credit Approval Date" of THIS YEAR.</span>
+                                    </div>
+                                </div>
+                                <div class="slds-size_1-of-2" style="display: flex;">
+                                   
+                                    <div class="inside-box-grey-double"  data-id="loansSigedIn" style="margin-left: 0.25rem; width:64%">
+                                      <div class="inside-box" style="cursor: default !important;">
+                                            {pullThroughPerForApproved}%
+                                        </div>
+                                       
+                                     </div>
+                                </div>
+                            </div>
+                            <div class="slds-grid" style="padding:0rem; margin:0rem">
+                                <div class="slds-size_1-of-2" style="width: 35%;"></div>
+                                <div class="slds-size_1-of-2" style="width: 65%;">
+                                    <div class="slds-grid" style="padding:0rem; margin:0rem">
+                                        <div class="slds-size_1-of-2" style="width:40%; position:relative; left:2rem">
+                                            <p style="font-size: 0.7rem; text-align:center; font-weight:600">LOI to Approval<br/>{pullThrPerForApprovedUnit}%</p>
+                                        </div>
+                                        <div class="slds-size_1-of-2" style="width: 60%; position:relative; left:2rem">
+                                            <p style="font-size: 0.7rem; text-align:center; font-weight:600">LOI to Approval<br/>{pullThroughPerForApproved}%</p>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                       
+                        <div style="background-color:white;" class="slds-box slds-box_xx-small box-wrp">
+                            <div class="demo-only demo-only--sizing slds-grid">
+                                <div class="slds-size_1-of-2" style="white-space:nowrap; display:flex; align-items:center">
+                                    <p class="card-title-left">Loans Closed </p>
+                                    <div class="tooltip" style="padding-left: 10px;">
+                                        <lightning-icon icon-name="utility:info_alt" class="blue-background-color" size="x-small"></lightning-icon>
+                                        <span class="tooltiptext"> Loans in this section only include Organic Renovo loans with a "Close Date" of THIS YEAR, in the "Servicing" or "Loan Paid Off" stages</span>
+                                    </div>
+                                </div>
+                                <div class="slds-size_1-of-2" style="display: flex;">
+
+                                    <div class="inside-box-grey-double" data-id="loansSigedIn" style="margin-left: 0.25rem; width:64%">
+                                     <div class="inside-box" style="cursor: default !important;">
+                                            {pullThroughPerForClosed}%
+                                        </div
+                                        
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="slds-grid" style="padding:0rem; margin:0rem">
+                                <div class="slds-size_1-of-2" style="width: 35%;"></div>
+                                <div class="slds-size_1-of-2" style="width: 65%;">
+                                    <div class="slds-grid" style="padding:0rem; margin:0rem">
+                                        <div class="slds-size_1-of-2" style="width:40%; position:relative; left:2rem">
+                                            <p style="font-size: 0.7rem; text-align:center; font-weight:600">Approval to Close<br/> {pullThrPerForClosedUnit}%</p>
+                                        </div>
+                                        <div class="slds-size_1-of-2" style="width: 60%; position:relative; left:2rem">
+                                            <p style="font-size: 0.7rem; text-align:center; font-weight:600">Approval to Close<br/> {pullThroughPerForClosed}%</p>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                       <div style="background-color:white;background-color:#E4F2FF !important; border-top:3px solid black; padding-top:0.30rem;padding-bottom:0.30rem" class="slds-box slds-box_xx-small box-wrp">
+                            <div class="demo-only demo-only--sizing slds-grid">
+                                <div class="slds-size_1-of-2" style="cursor:pointer;white-space:nowrap; display:flex; align-items:center" data-id="loansPaidOffInYear" onclick={getAllLOIOpps}> 
+                                    <p class="card-title-left">LOI to Close %</p>
+                                    <div class="tooltip" style="padding-left: 10px;">
+                                        <lightning-icon icon-name="utility:info_alt" class="blue-background-color" size="x-small"></lightning-icon>
+                                        <span class="tooltiptext"> These %'s represent the pull-through rate from "LOI to Close</span>
+                                    </div>
+                                </div>
+                                <div class="slds-size_1-of-2"  style="display: flex;">
+                                    <div class="inside-box-grey-double" data-id="loansSigedIn" style="width:50%">
+                                        <div class="inside-box" data-id="loansClosedInYear" onclick={getAllLOIOpps} style="display:flex;align-items:center; justify-content:center;cursor: default !important;">
+                                            {pullThrPerForTotalUnit} % 
+                                        </div>  
+                                    </div>
+                                    <div class="inside-box-grey-double" data-id="loansSigedIn" style="margin-left: 0.25rem; cursor: default !important; width:50%">
+                                        <div class="inside-box" style="display:flex;align-items:center; justify-content:center;cursor: default !important;">
+                                            {pullThroughPerForTotal}%
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>-->
+                        </div>
+                    </lightning-layout-item>
+                </lightning-layout>
+            </div>
+        </lightning-card>
+    </div>
+</template>

@@ -1,0 +1,1507 @@
+<!--
+  @description       : 
+  @author            : ChangeMeIn@UserSettingsUnder.SFDoc
+  @group             : 
+  @last modified on  : 01-05-2024
+  @last modified by  : ChangeMeIn@UserSettingsUnder.SFDoc
+-->
+<aura:component
+  controller="CustomerReportController"
+  implements="force:appHostable,flexipage:availableForAllPageTypes,forceCommunity:availableForAllPageTypes"
+  access="global"
+>
+  <ltng:require styles="{!$Resource.Lato}" />
+  <ltng:require scripts="{!join(',',$Resource.highcharts)}" afterScriptsLoaded="{!c.scriptsLoaded}" />
+  <aura:registerEvent name="myevent" type="c:fireEvent" />
+  <aura:attribute name="customerId" type="string" default="" />
+  <aura:attribute name="isCommunityUser" type="boolean" />
+  <aura:attribute name="searchText" type="string" />
+  <aura:attribute name="mailTo" type="string" />
+  <aura:attribute name="mailCc" type="string" />
+  <aura:attribute name="mailBcc" type="string" />
+  <aura:attribute name="mailSubject" type="string" />
+  <aura:attribute name="mailBody" type="string" />
+  <aura:attribute name="mailAttachment" type="string" />
+  <aura:attribute name="error" type="string" />
+  <aura:attribute name="isOpen" type="boolean" default="false" />
+  <aura:attribute name="spinner" type="boolean" default="false" />
+  <aura:attribute name="spinner2" type="boolean" default="false" />
+  <aura:attribute name="isCommunity" type="boolean" default="false" />
+  <aura:attribute name="showManagementDiagnostics" type="boolean" default="true" />
+  <aura:attribute name="managementDiagnostics" type="Object" />
+  <aura:attribute name="agentDiagnostics" type="Object" />
+  <aura:attribute name="customerDetails" type="object" />
+  <aura:handler name="change" value="{!v.customerDetails}" action="{!c.prepareData}" />
+  <aura:attribute name="customerDetailsNew" type="object" />
+  <aura:attribute name="popUpRecordDetail" type="object" />
+  <aura:attribute name="listOfReports" type="object" />
+  <aura:attribute name="timer" type="Integer" />
+  <aura:attribute name="reportDate" type="Date" />
+  <aura:attribute name="reportId" type="string" />
+  <aura:attribute name="report_Date" type="String" />
+  <!--Following attributes help in deciding if all data is retrieved-->
+  <aura:attribute name="diagnosticsRetrieved" type="boolean" />
+  <aura:attribute name="alertsAndSitesRetrieved" type="boolean" />
+  <aura:attribute name="agentOsCountRetrieved" type="boolean" />
+  <aura:attribute name="agentTypeRetrieved" type="boolean" />
+  <!-- loader -->
+  <aura:attribute name="userTypeLoader" type="boolean" />
+  <aura:attribute name="diagnosticsRetrievedLoader" type="boolean" />
+  <aura:attribute name="alertsAndSitesRetrievedLoader" type="boolean" />
+  <aura:attribute name="agentOsCountRetrievedLoader" type="boolean" />
+  <aura:attribute name="agentTypeRetrievedLoader" type="boolean" />
+  <!-- New Development -->
+  <aura:attribute name="response" type="Object" />
+  <aura:attribute name="MD" type="boolean" default="true" />
+  <aura:attribute name="AD" type="boolean" />
+  <Aura:attribute name="impactCheckModal" type="boolean" default="false" />
+  <aura:attribute name="value" type="string" />
+  <aura:attribute name="currentPopUpRecord" type="Object" />
+  <aura:attribute name="opneEmailpopUp" type="Boolean" default="false" />
+  <aura:attribute name="siteSorted" type="String" default="none" />
+  <aura:attribute name="groupNameSorted" type="String" default="none" />
+  <aura:attribute name="machineTypeSorted" type="String" default="none" />
+  <aura:attribute name="computerNameSorted" type="String" default="none" />
+  <aura:attribute name="osSorted" type="String" default="none" />
+  <aura:attribute name="agentVersionSorted" type="String" default="none" />
+  <aura:attribute name="detailsSorted" type="String" default="none" />
+  <aura:attribute name="selectCustName" type="boolean" default="false" />
+  <aura:attribute name="selectDate" type="boolean" default="false" />
+  <aura:attribute name="isError" type="boolean" default="false" />
+  <aura:attribute name="popupTopStyle" type="String" />
+  <!--Following Attributes is for Ingore Alerts-->
+  <aura:attribute
+    name="showToastMessage"
+    type="object"
+    description="this attribute is for visualforce page javascript method"
+  />
+  <aura:attribute
+    name="showIgnoredAlertsManagement"
+    type="object"
+    description="this attribute is for visualforce page javascript method"
+  />
+  <!--Following attribute keeps track of how many of data are loaded-->
+  <!--data are : Accessible URL, No Of Agents, No Of Sites, No of Groups -->
+  <!--Diagnostics, Alerts and Sites, Agent OS Count, Agent Types -->
+  <!--When all 8 data are loaded, value is set in  customerDetails, this fires prepareData-->
+  <aura:attribute name="dataLoaderCounter" type="integer" default="0" />
+  <!--One all data is retrieved, call following to organize data-->
+  <aura:attribute name="allDataRetrieved" type="boolean" />
+  <aura:handler name="change" value="{!v.allDataRetrieved}" action="{!c.prepareData}" />
+  <!--loading spinner start-->
+  <input id="theHiddenInput" type="text" name="theHiddenInput" style="display: none" />
+  <aura:if isTrue="{!v.spinner}">
+    <div aura:id="spinnerIdLightning" class="slds-spinner_container" style="position: fixed">
+      <div class="slds-spinner--brand slds-spinner slds-is-fixed spin-position" role="alert">
+        <table class="loaderText" style="width: 100%; top: -10rem; left: -2rem">
+          <tr>
+            <td
+              style="
+                 {
+                  !v.usertypeloader?'vertical-align:bottom': '';
+                }
+              "
+            >
+              <span class="{!v.userTypeLoader ? 'tick-mark' : 'loader'}"></span>
+            </td>
+            <td class="loadMessage"><span>Loading Account Details</span></td>
+          </tr>
+          <tr>
+            <td
+              style="
+                 {
+                  !v.agenttyperetrievedloader?'vertical-align:bottom': '';
+                }
+              "
+            >
+              <span class="{!v.agentTypeRetrievedLoader ? 'tick-mark' : 'loader'}"></span>
+            </td>
+            <td class="loadMessage"><span>Loading Agent Types</span></td>
+          </tr>
+          <tr>
+            <td
+              style="
+                 {
+                  !v.alertsandsitesretrievedloader?'vertical-align:bottom': '';
+                }
+              "
+            >
+              <span class="{!v.alertsAndSitesRetrievedLoader ? 'tick-mark' : 'loader'}"></span>
+            </td>
+            <td class="loadMessage"><span>Loading Alerts and Sites</span></td>
+          </tr>
+          <tr>
+            <td
+              style="
+                 {
+                  !v.agentoscountretrievedloader?'vertical-align:bottom': '';
+                }
+              "
+            >
+              <span class="{!v.agentOsCountRetrievedLoader ? 'tick-mark' : 'loader'}"></span>
+            </td>
+            <td class="loadMessage"><span>Loading Agent OS Counts</span></td>
+          </tr>
+          <tr>
+            <td
+              style="
+                 {
+                  !v.diagnosticsretrievedloader?'vertical-align:bottom': '';
+                }
+              "
+            >
+              <span class="{!v.diagnosticsRetrievedLoader ? 'tick-mark' : 'loader'}"></span>
+            </td>
+            <td class="loadMessage"><span>Loading Diagnostics</span></td>
+          </tr>
+        </table>
+      </div>
+    </div>
+  </aura:if>
+  <aura:if isTrue="{!v.spinner2}">
+    <div aura:id="spinnerIdLightning" class="slds-spinner_container" style="position: fixed">
+      <div class="slds-spinner--brand slds-spinner slds-spinner--large slds-is-fixed spin-position" role="alert">
+        <span class="slds-assistive-text">Loading...</span>
+        <div class="slds-spinner__dot-a"></div>
+        <div class="slds-spinner__dot-b"></div>
+      </div>
+    </div>
+  </aura:if>
+  <div id="spinnerId" class="slds-spinner_container" style="position: fixed; display: none">
+    <div class="slds-spinner-brand slds-spinner slds-spinner-large slds-is-fixed spin-position" role="alert">
+      <span class="slds-spinner"></span>
+      <div class="slds-spinner__dot-a"></div>
+      <div class="slds-spinner__dot-b"></div>
+    </div>
+  </div>
+  <!-- new Design -->
+  <div
+    class="report-container"
+    style="padding: 80px 40px 0px 40px; display: flex; width: 100%; justify-content: center"
+  >
+    <!-- <div style="padding-bottom: 10px">
+            <div class="down-bar down-bar-content slds-grid">
+                <div class="slds-col" style="display: flex; gap: 10px">
+                    <div class="black-topbar-logo">
+                        <img src="{!$Resource.SentinelOneColorImage}" class="SentinelOne" />
+                    </div>
+                    <div>
+                        <span class="Proactive-Support"> Proactive Support </span>
+                    </div>
+                </div>
+                <div class="slds-col">
+                    <div class="down-bar-button-group" onclick="{!c.openIgnoredAlertsManagement}">
+                        <span class="Ignored-Alert"> Manage Ignored Alerts </span>
+                    </div>
+                </div>
+            </div>
+        </div> -->
+    <div class="main-container">
+      <div class="mainPage" style="margin-bottom: 60px">
+        <div class="header-section">
+          <div class="slds-grid">
+            <div class="slds-col slds-grid_vertical slds-size_3-of-4">
+              <div class="slds-col header" style="display: flex; gap: 10px">
+                <div><img src="{!$Resource.threatreportlogo}" class="logo" /></div>
+                <div>Proactive Support Report</div>
+              </div>
+              <div class="slds-col body-fonts" style="margin-left: 55px">
+                <aura:if isTrue="{!v.selectDate}">
+                  <div style="width: 175px !important; cursor: pointer">
+                    <lightning:input
+                      type="date"
+                      variant="label-hidden"
+                      value="{!v.reportDate}"
+                      onchange="{!c.dateChange}"
+                      name="input1"
+                      label=""
+                      class="InputDate"
+                      placeholder="Report date"
+                    />
+                  </div>
+                  <aura:set attribute="else">
+                    {!v.customerDetailsNew.reportDate}
+                    <aura:if isTrue="{!v.customerDetailsNew.hasMultipleRecord}">
+                      <img style="padding-left: 5px" src="{!$Resource.Down_Arrow}" onclick="{!c.selectDate}" />
+                    </aura:if>
+                  </aura:set>
+                </aura:if>
+              </div>
+            </div>
+            <div class="slds-col slds-size_1-of-4">
+              <div class="btn-group">
+                <div class="share-btn btn-fonts icon-btn" onclick="{!c.forward}">
+                  <div><img src="{!$Resource.share_icon}" /></div>
+                  <div><span>Share</span></div>
+                </div>
+                <div class="download-pdf-btn btn-fonts icon-btn" onclick="{!c.fireevent}">
+                  <div><img src="{!$Resource.download_icon}" /></div>
+                  <div><span>Download As PDF</span></div>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="acc-detail-container">
+            <div class="detail-section side-border">
+              <div class="Caption2">Account Name</div>
+              <aura:if isTrue="{!v.selectCustName}">
+                <lightning:select
+                  name="select1"
+                  variant="label-hidden"
+                  value="{!v.reportId}"
+                  class="Inputcustomer"
+                  onchange="{!c.reportChange}"
+                >
+                  <aura:iteration items="{!v.listOfReports}" var="l">
+                    <option selected="{!v.reportId == l.key}" value="{!l.key}" text="{!l.value}"></option>
+                  </aura:iteration>
+                </lightning:select>
+                <aura:set attribute="else">
+                  <div class="Subtitle1">
+                    {!v.customerDetailsNew.customer_name} &nbsp;
+                    <aura:if isTrue="{!v.customerDetailsNew.hasMultipleRecord}">
+                      <img style="padding-left: 5px" src="{!$Resource.Down_Arrow}" onclick="{!c.openDropDown}" />
+                    </aura:if>
+                  </div>
+                </aura:set>
+              </aura:if>
+            </div>
+            <div class="detail-section side-border">
+              <div class="Caption2">Accessible URL</div>
+              <div class="Subtitle1" style="cursor: pointer" onclick="{!c.openAccessibleUrl}">
+                {!v.customerDetailsNew.accessible_url}
+              </div>
+            </div>
+            <div class="detail-section side-border">
+              <div class="Caption2">Number of Sites</div>
+              <div class="Subtitle1">{!v.customerDetailsNew.number_of_sites}</div>
+            </div>
+            <div class="detail-section side-border">
+              <div class="Caption2">Number of Groups</div>
+              <div class="Subtitle1">{!v.customerDetailsNew.number_of_groups}</div>
+            </div>
+            <div class="detail-section">
+              <div class="Caption2">Number of EP Agents</div>
+              <div class="Subtitle1">{!v.customerDetailsNew.number_of_agents}</div>
+            </div>
+          </div>
+        </div>
+        <div class="section" style="width: 100%">
+          <div class="section-title">Overview</div>
+          <div style="display: flex; gap: 16px">
+            <div class="sub-section overview-sub-section1">
+              <div class="sub-section-title">AGENT BY OS</div>
+              <div style="margin-top: 16px; display: flex">
+                <div class="agent-by-os-content side-border" style="padding-right: 16px">
+                  <div class="Subtitle2">
+                    <div style="width: 30px !important">
+                      <img src="{!$Resource.os_windows}" />
+                    </div>
+                    <div>Windows</div>
+                    <div style="width: auto">{!v.customerDetailsNew.agents_os_count.windowsPercentage}</div>
+                  </div>
+                  <div class="Caption2">
+                    <div style="width: auto">
+                      <div
+                        class="circle"
+                        style="{!'background-color: ' + v.customerDetailsNew.chartColor.agentByOsColors.supported}"
+                      ></div>
+                    </div>
+                    <div>Supported</div>
+                    <div style="width: auto">
+                      <a href="{!v.customerDetailsNew.agents_os_count.windowsSupport.supportedLink}" target="_blank">
+                        {!v.customerDetailsNew.agents_os_count.windowsSupport.supported_perc}
+                      </a>
+                    </div>
+                  </div>
+                  <div class="Caption2">
+                    <div style="width: auto">
+                      <div
+                        class="circle"
+                        style="{!'background-color: ' + v.customerDetailsNew.chartColor.agentByOsColors.eos}"
+                      ></div>
+                    </div>
+                    <div style="flex-shrink: 1">End of Support</div>
+                    <div style="width: auto">
+                      <a href="{!v.customerDetailsNew.agents_os_count.windowsSupport.eosLink}" target="_blank">
+                        {!v.customerDetailsNew.agents_os_count.windowsSupport.eos_perc}
+                      </a>
+                    </div>
+                  </div>
+                  <div class="Caption2">
+                    <div style="width: auto">
+                      <div
+                        class="circle"
+                        style="{!'background-color: ' + v.customerDetailsNew.chartColor.agentByOsColors.eol}"
+                      ></div>
+                    </div>
+                    <div>End of Life</div>
+                    <div style="width: auto">
+                      <a href="{!v.customerDetailsNew.agents_os_count.windowsSupport.eolLink}" target="_blank">
+                        {!v.customerDetailsNew.agents_os_count.windowsSupport.eol_perc}
+                      </a>
+                    </div>
+                  </div>
+                </div>
+                <div class="agent-by-os-content side-border" style="padding: 0px 16px">
+                  <div class="Subtitle2">
+                    <div style="width: 30px !important">
+                      <img src="{!$Resource.os_linux}" />
+                    </div>
+                    <div>Linux</div>
+                    <div style="width: auto">{!v.customerDetailsNew.agents_os_count.linuxPercentage}</div>
+                  </div>
+                  <div class="Caption2">
+                    <div style="width: auto">
+                      <div
+                        class="circle"
+                        style="{!'background-color: ' + v.customerDetailsNew.chartColor.agentByOsColors.supported}"
+                      ></div>
+                    </div>
+                    <div>Supported</div>
+                    <div style="width: auto">
+                      <a href="{!v.customerDetailsNew.agents_os_count.linuxSupport.supportedLink}" target="_blank">
+                        {!v.customerDetailsNew.agents_os_count.linuxSupport.supported_perc}
+                      </a>
+                    </div>
+                  </div>
+                  <div class="Caption2">
+                    <div style="width: auto">
+                      <div
+                        class="circle"
+                        style="{!'background-color: ' + v.customerDetailsNew.chartColor.agentByOsColors.eos}"
+                      ></div>
+                    </div>
+                    <div style="flex-shrink: 1">End of Support</div>
+                    <div style="width: auto">
+                      <a href="{!v.customerDetailsNew.agents_os_count.linuxSupport.eosLink}" target="_blank">
+                        {!v.customerDetailsNew.agents_os_count.linuxSupport.eos_perc}
+                      </a>
+                    </div>
+                  </div>
+                  <div class="Caption2">
+                    <div style="width: auto">
+                      <div
+                        class="circle"
+                        style="{!'background-color: ' + v.customerDetailsNew.chartColor.agentByOsColors.eol}"
+                      ></div>
+                    </div>
+                    <div>End of Life</div>
+                    <div style="width: auto">
+                      <a href="{!v.customerDetailsNew.agents_os_count.linuxSupport.eolLink}" target="_blank">
+                        {!v.customerDetailsNew.agents_os_count.linuxSupport.eol_perc}
+                      </a>
+                    </div>
+                  </div>
+                </div>
+                <div class="agent-by-os-content side-border" style="padding: 0px 16px">
+                  <div class="Subtitle2">
+                    <div style="width: 30px !important">
+                      <img src="{!$Resource.os_mac}" />
+                    </div>
+                    <div>MacOS</div>
+                    <div style="width: auto">{!v.customerDetailsNew.agents_os_count.macPercentage}</div>
+                  </div>
+                  <div class="Caption2">
+                    <div style="width: auto">
+                      <div
+                        class="circle"
+                        style="{!'background-color: ' + v.customerDetailsNew.chartColor.agentByOsColors.supported}"
+                      ></div>
+                    </div>
+                    <div>Supported</div>
+                    <div style="width: auto">
+                      <a href="{!v.customerDetailsNew.agents_os_count.macSupport.supportedLink}" target="_blank">
+                        {!v.customerDetailsNew.agents_os_count.macSupport.supported_perc}
+                      </a>
+                    </div>
+                  </div>
+                  <div class="Caption2">
+                    <div style="width: auto">
+                      <div
+                        class="circle"
+                        style="{!'background-color: ' + v.customerDetailsNew.chartColor.agentByOsColors.eos}"
+                      ></div>
+                    </div>
+                    <div style="flex-shrink: 1">End of Support</div>
+                    <div style="width: auto">
+                      <a href="{!v.customerDetailsNew.agents_os_count.macSupport.eosLink}" target="_blank">
+                        {!v.customerDetailsNew.agents_os_count.macSupport.eos_perc}
+                      </a>
+                    </div>
+                  </div>
+                  <div class="Caption2">
+                    <div style="width: auto">
+                      <div
+                        class="circle"
+                        style="{!'background-color: ' + v.customerDetailsNew.chartColor.agentByOsColors.eol}"
+                      ></div>
+                    </div>
+                    <div>End of Life</div>
+                    <div style="width: auto">
+                      <a href="{!v.customerDetailsNew.agents_os_count.macSupport.eolLink}" target="_blank">
+                        {!v.customerDetailsNew.agents_os_count.macSupport.eol_perc}
+                      </a>
+                    </div>
+                  </div>
+                </div>
+                <div class="agent-by-os-content" style="padding-left: 16px">
+                  <div class="Subtitle2">
+                    <div style="width: 30px !important">
+                      <img src="{!$Resource.os_windows}" />
+                    </div>
+                    <div>Legacy</div>
+                    <div style="width: auto">{!v.customerDetailsNew.agents_os_count.windowsLegacyPercentage}</div>
+                  </div>
+                  <div class="Caption2">
+                    <div style="width: auto">
+                      <div
+                        class="circle"
+                        style="{!'background-color: ' + v.customerDetailsNew.chartColor.agentByOsColors.supported}"
+                      ></div>
+                    </div>
+                    <div>Supported</div>
+                    <div style="width: auto">
+                      <a
+                        href="{!v.customerDetailsNew.agents_os_count.windowsLegacySupport.supportedLink}"
+                        target="_blank"
+                      >
+                        {!v.customerDetailsNew.agents_os_count.windowsLegacySupport.supported_perc}
+                      </a>
+                    </div>
+                  </div>
+                  <div class="Caption2">
+                    <div style="width: auto">
+                      <div
+                        class="circle"
+                        style="{!'background-color: ' + v.customerDetailsNew.chartColor.agentByOsColors.eos}"
+                      ></div>
+                    </div>
+                    <div style="flex-shrink: 1">End of Support</div>
+                    <div style="width: auto">
+                      <a href="{!v.customerDetailsNew.agents_os_count.windowsLegacySupport.eosLink}" target="_blank">
+                        {!v.customerDetailsNew.agents_os_count.windowsLegacySupport.eos_perc}
+                      </a>
+                    </div>
+                  </div>
+                  <div class="Caption2">
+                    <div style="width: auto">
+                      <div
+                        class="circle"
+                        style="{!'background-color: ' + v.customerDetailsNew.chartColor.agentByOsColors.eol}"
+                      ></div>
+                    </div>
+                    <div>End of Life</div>
+                    <div style="width: auto">
+                      <a href="{!v.customerDetailsNew.agents_os_count.windowsLegacySupport.eolLink}" target="_blank">
+                        {!v.customerDetailsNew.agents_os_count.windowsLegacySupport.eol_perc}
+                      </a>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div class="sub-section overview-sub-section1 doughnut-container" style="width: 296px; min-width: 296px">
+              <div class="sub-section-title">Agent By Type</div>
+              <div
+                aura:id="agentByTypeChart"
+                name="agentByTypeChart"
+                id="agentByTypeChart"
+                style="margin-top: 16px; width: 100%; height: 108px"
+              ></div>
+            </div>
+          </div>
+          <div style="display: flex; gap: 16px; width: 100%">
+            <div class="sub-section overview-sub-section2" style="width: calc(50% - 8px)">
+              <div class="sub-section-title">Top Sites with Alerts</div>
+              <div
+                aura:id="topSiteChart"
+                name="topSiteChart"
+                id="topSiteChart"
+                style="margin-top: 16px; height: 156px"
+              ></div>
+            </div>
+            <div class="sub-section overview-sub-section2" style="width: calc(50% - 8px)">
+              <div class="sub-section-title">Top Agents with Alerts</div>
+              <div
+                aura:id="topAlertChart"
+                name="topAlertChart"
+                id="topAlertChart"
+                style="margin-top: 16px; height: 156px"
+              ></div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="section Diagnostics">
+        <div class="section-title">Diagnostics</div>
+        <div style="margin-top: 32px; margin-bottom: 24px; display: flex">
+          <div class="btn-group-container">
+            <div aura:id="MD" class="btn-fonts1 diagnostics-btn" onclick="{!c.clickMD}">
+              <span>Management Diagnostics ( {!v.customerDetailsNew.management_diagnostics.length} )</span>
+            </div>
+            <div aura:id="AD" class="btn-fonts1" onclick="{!c.clickAD}">
+              <span>Agent Diagnostics ( {!v.customerDetailsNew.agents_diagnostics.length} )</span>
+            </div>
+          </div>
+          <div class="search-btn-combo">
+            <div
+              class="body-fonts"
+              style="
+                width: 290px !important;
+                height: 32px !important;
+                display: flex;
+                flex-direction: column;
+                justify-content: center;
+                text-align: right;
+              "
+            >
+              <div>
+                <aura:if isTrue="{!v.selectDate}">
+                  <div style="cursor: pointer; height: 32px">
+                    <lightning:input
+                      type="date"
+                      variant="label-hidden"
+                      value="{!v.reportDate}"
+                      onchange="{!c.dateChange}"
+                      name="input1"
+                      label=""
+                      class="InputDate"
+                      placeholder="Report date"
+                    />
+                  </div>
+                  <aura:set attribute="else">
+                    {!v.customerDetailsNew.reportDate}
+                    <aura:if isTrue="{!v.customerDetailsNew.hasMultipleRecord}">
+                      <img style="padding-left: 5px" src="{!$Resource.Down_Arrow}" onclick="{!c.selectDate}" />
+                    </aura:if>
+                  </aura:set>
+                </aura:if>
+              </div>
+            </div>
+            <div class="search-btn-container icon-btn" style="width: 285px">
+              <div>
+                <img src="{!$Resource.search_icon}" style="margin-left: 8px" />
+              </div>
+              <div class="place-holder">
+                <lightning:input
+                  name="search-input"
+                  label=""
+                  variant="label-hidden"
+                  placeholder="Search"
+                  class="search-input"
+                  value="{!v.value}"
+                  onkeyup="{!c.searchRecords}"
+                />
+              </div>
+            </div>
+          </div>
+        </div>
+        <div style="width: 100%">
+          <div class="table-title">
+            <div class="Caption3" style="width: calc(11% - 24px)">Category</div>
+            <div class="Caption3" style="width: calc(16% - 24px)">Issues</div>
+            <div class="Caption3" style="width: calc(25.5% - 24px)">Description</div>
+            <div class="Caption3" style="width: calc(25.5% - 24px)">Remediation</div>
+            <div class="Caption3" style="width: calc(9% - 24px)">Severity</div>
+            <div class="Caption3" style="width: 14%">Impact Sites / Groups</div>
+          </div>
+          <div class="table-data-container">
+            <aura:if isTrue="{!v.MD}">
+              <aura:iteration items="{!v.customerDetailsNew.management_diagnostics}" var="md" indexVar="i">
+                <div
+                  data-record="{!i}"
+                  id="{!'manage-tr-'+i}"
+                  class="ticket-list-item"
+                  onmouseenter="{!c.showEyeIcon}"
+                  onmouseleave="{!c.hideEyeIcon}"
+                >
+                  <div class="body-fonts" style="width: calc(11% - 24px)">{!md.category}</div>
+                  <div class="body-fonts" style="width: calc(16% - 24px)">{!md.sub_category}</div>
+                  <div class="body-fonts" style="width: calc(25.5% - 24px)">
+                    <lightning:formattedRichText value="{!md.description}" />
+                  </div>
+                  <div class="body-fonts" style="width: calc(25.5% - 24px)">
+                    <lightning:formattedRichText value="{!md.remediation}" />
+                  </div>
+                  <div class="body-fonts" style="width: calc(9% - 24px); display: flex; gap: 8px">
+                    <div
+                      class="circle-small"
+                      style="{!(md.severity == 'High' ? 'background-color: ' + v.customerDetailsNew.chartColor.dsColors.high : md.severity == 'Medium' ? 'background-color: #f0aa3a' : 'background-color: ' + v.customerDetailsNew.chartColor.dsColors.low)}"
+                    ></div>
+                    {!md.severity}
+                  </div>
+                  <div class="body-fonts" style="width: calc(14.5% - 24px); display: flex; gap: 4px">
+                    <div
+                      id="{!md.id}"
+                      class="share-btn btn-fonts icon-btn"
+                      onclick="{!c.openCheckImpact}"
+                      style="min-width: 120px"
+                    >
+                      <div><span>Check Impact</span></div>
+                      <div><img src="{!$Resource.Arrow_Right}" /></div>
+                    </div>
+                    <div
+                      id="{!'toShowEyeIconManage-'+i}"
+                      style="display: none; min-width: 20px; vertical-align: middle"
+                    >
+                      <div
+                        data-record="{!i}"
+                        id="{!'eyeClosed-'+i}"
+                        onclick="{!c.removeAlert}"
+                        style="display: block; vertical-align: middle"
+                      >
+                        <img src="{!$Resource.EyeIcon}" class="ignore-rule-eyeIcon" />
+                      </div>
+                      <div
+                        data-record="{!i}"
+                        id="{!'eyeOpen-'+i}"
+                        onclick="{!c.addAlert}"
+                        style="display: none; vertical-align: middle"
+                      >
+                        <img src="{!$Resource.EyeIconOpen}" class="ignore-rule-eyeIcon" />
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </aura:iteration>
+            </aura:if>
+            <aura:if isTrue="{!v.AD}">
+              <aura:iteration items="{!v.customerDetailsNew.agents_diagnostics}" var="ad" indexVar="i">
+                <div
+                  data-record="{!i}"
+                  id="{!'agent-tr-'+i}"
+                  class="ticket-list-item"
+                  onmouseenter="{!c.showEyeIcon}"
+                  onmouseleave="{!c.hideEyeIcon}"
+                >
+                  <div class="body-fonts" style="width: calc(11% - 24px)">{!ad.category}</div>
+                  <div class="body-fonts" style="width: calc(16% - 24px)">{!ad.sub_category}</div>
+                  <div class="body-fonts" style="width: calc(25.5% - 24px)">
+                    <lightning:formattedRichText value="{!ad.description}" />
+                  </div>
+                  <div class="body-fonts" style="width: calc(25.5% - 24px)">
+                    <lightning:formattedRichText value="{!ad.remediation}" />
+                  </div>
+                  <div class="body-fonts" style="width: calc(9% - 24px); display: flex; gap: 8px">
+                    <div
+                      class="circle-small"
+                      style="{!(ad.severity == 'High' ? 'background-color: ' + v.customerDetailsNew.chartColor.dsColors.high : ad.severity == 'Medium' ? 'background-color: #f0aa3a ' : 'background-color: ' + v.customerDetailsNew.chartColor.dsColors.low)}"
+                    ></div>
+                    {!ad.severity}
+                  </div>
+                  <div class="body-fonts" style="width: calc(14.5% - 24px); display: flex; gap: 4px">
+                    <div
+                      id="{!ad.id}"
+                      class="share-btn btn-fonts icon-btn"
+                      onclick="{!c.openCheckImpact}"
+                      style="min-width: 120px"
+                    >
+                      <div><span>Check Impact</span></div>
+                      <div><img src="{!$Resource.Arrow_Right}" /></div>
+                    </div>
+                    <div id="{!'toShowEyeIconAgent-'+i}" style="display: none; min-width: 20px; vertical-align: middle">
+                      <div
+                        data-record="{!i}"
+                        id="{!'eyeClosed-'+i}"
+                        onclick="{!c.removeAlert}"
+                        style="display: block; vertical-align: middle"
+                      >
+                        <img src="{!$Resource.EyeIcon}" class="ignore-rule-eyeIcon" />
+                      </div>
+                      <div
+                        data-record="{!i}"
+                        id="{!'eyeOpen-'+i}"
+                        onclick="{!c.addAlert}"
+                        style="display: none; vertical-align: middle"
+                      >
+                        <img src="{!$Resource.EyeIconOpen}" class="ignore-rule-eyeIcon" />
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </aura:iteration>
+            </aura:if>
+          </div>
+        </div>
+      </div>
+    </div>
+    <!-- <div class="down-bar">
+            <div class="down-bar-content slds-grid">
+                <div class="slds-col">
+                    <div class="back-to-top-btn btn-fonts icon-btn" onclick="{!c.backToTop}">
+                        <div>
+                            <img src="{!$Resource.upArraow}" />
+                        </div>
+                        <div>
+                            <span>Back to Top</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="slds-col">
+                    <div class="down-bar-button-group">
+                        <div class="share-btn btn-fonts icon-btn" onclick="{!c.forward}">
+                            <div>
+                                <img src="{!$Resource.share_icon}" />
+                            </div>
+                            <div>
+                                <span>Share</span>
+                            </div>
+                        </div>
+                        <div class="download-pdf-btn btn-fonts icon-btn" onclick="{!c.fireevent}">
+                            <div>
+                                <img src="{!$Resource.download_icon}" />
+                            </div>
+                            <div>
+                                <span>Download As PDF</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div> -->
+    <!-- impact check modal  -->
+    <aura:if isTrue="{!v.impactCheckModal}">
+      <section
+        role="dialog"
+        tabindex="-1"
+        aria-modal="true"
+        aria-labelledby="modal-heading-01"
+        class="slds-modal slds-fade-in-open slds-modal_large slds-slide-up-open"
+        style="{!v.popupTopStyle}"
+      >
+        <div id="impactModal" class="slds-modal__container">
+          <div class="slds-modal__header impactCheckModal">
+            <h1 id="modal-heading-01" class="slds-modal__title slds-hyphenate">Impact Sites / Groups</h1>
+          </div>
+          <div class="slds-modal__content slds-p-around_medium" id="modal-content-id-1">
+            <div class="pop-upTable">
+              <div class="popupTable-row">
+                <div class="Caption2" style="width: 20%">Category</div>
+                <div class="body-fonts" style="width: 80%">{!v.currentPopUpRecord.category}</div>
+              </div>
+              <div class="popupTable-row">
+                <div class="Caption2" style="width: 20%">Issues</div>
+                <div class="body-fonts" style="width: 80%">{!v.currentPopUpRecord.sub_category}</div>
+              </div>
+              <div class="popupTable-row">
+                <div class="Caption2" style="width: 20%">Severity</div>
+                <div class="body-fonts" style="display: flex; gap: 8px; width: 80%">
+                  <div
+                    class="circle-small"
+                    style="{!(v.currentPopUpRecord.severity == 'High' ? 'background-color: ' + v.customerDetailsNew.chartColor.dsColors.high : v.currentPopUpRecord.severity == 'Medium' ? 'background-color: #f0aa3a': 'background-color: ' + v.customerDetailsNew.chartColor.dsColors.low)}"
+                  ></div>
+                  {!v.currentPopUpRecord.severity}
+                </div>
+              </div>
+              <div class="popupTable-row">
+                <div class="Caption2" style="width: 20%">Description</div>
+                <div class="body-fonts" style="width: 80%">
+                  <lightning:formattedRichText value="{!v.currentPopUpRecord.description}" />
+                </div>
+              </div>
+              <div class="popupTable-row">
+                <div class="Caption2" style="width: 20%">Remediation</div>
+                <div class="body-fonts" style="width: 80%">
+                  <lightning:formattedRichText value="{!v.currentPopUpRecord.remediation}" />
+                </div>
+              </div>
+            </div>
+            <div class="site-group-content">
+              <aura:if isTrue="{!v.MD}">
+                <div class="title">
+                  <div style="width: calc(30% - 10px); border-right: 1px solid #757575; display: flex">
+                    <div style="width: 50%"><span>Site</span></div>
+                    <div style="width: 50%">
+                      <div style="float: right">
+                        <img
+                          style="margin-right: 8px"
+                          id="site"
+                          src="{!$Resource.up_down_arrow}"
+                          onclick="{!c.doSorting}"
+                        />
+                        <img src="{!$Resource.options}" />
+                      </div>
+                    </div>
+                  </div>
+                  <div style="width: 70%; border-right: 1px solid #757575; display: flex">
+                    <div style="width: 50%"><span>Group Name</span></div>
+                    <div style="width: 50%">
+                      <div style="float: right">
+                        <img
+                          style="margin-right: 8px"
+                          id="groupName"
+                          src="{!$Resource.up_down_arrow}"
+                          onclick="{!c.doSorting}"
+                        />
+                        <img src="{!$Resource.options}" />
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                <div class="popup-dataTable">
+                  <aura:iteration items="{!v.currentPopUpRecord.impacted}" var="i" indexVar="itr">
+                    <div
+                      data-record="{!itr}"
+                      onmouseenter="{!c.showEyeIconForDetails}"
+                      onmouseleave="{!c.hideEyeIconForDetails}"
+                      class="{!'data hide-'+itr}"
+                    >
+                      <div class="body-fonts" style="width: 30%">{!i.site}</div>
+                      <div class="body-fonts" style="width: 68%">{!i.groupName}</div>
+                      <div style="width: 2%">
+                        <div
+                          data-record="{!itr}"
+                          id="{!'toShowEyeIconTdManageDEtails-'+itr}"
+                          style="margin-left: -2.34vw; position: relative; display: none"
+                        >
+                          <div data-record="{!itr}" id="{!'detailEyeClosed-'+itr}" onclick="{!c.showHideDropdown}">
+                            <img
+                              src="{!$Resource.EyeIcon}"
+                              id="{!'openEyeImage-'+itr}"
+                              class="ignore-rule"
+                              style="margin-left: 12px"
+                            />
+                            <div
+                              id="{!'listItems-'+itr}"
+                              class="dropdownitem-list"
+                              style="display: none !important; margin-left: -9vw"
+                            >
+                              <div
+                                class="listItemContainer listItemsOtions"
+                                data-record="{!itr}"
+                                data-ignoreall="false"
+                                onclick="{!c.removeDetailAlert}"
+                              >
+                                Ignore this alert item
+                              </div>
+                              <div
+                                class="listItemContainer listItemsOtions"
+                                data-record="{!itr}"
+                                data-ignoreall="true"
+                                onclick="{!c.removeDetailAlert}"
+                              >
+                                Ignore all alerts in category
+                              </div>
+                            </div>
+                          </div>
+                          <div data-record="{!itr}" id="{!'detailEyeOpen-'+itr}" style="display: none">
+                            <img src="{!$Resource.EyeIconOpen}" class="ignore-rule" />
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </aura:iteration>
+                </div>
+                <aura:set attribute="else">
+                  <div class="title">
+                    <div style="width: calc(25% - 10px); border-right: 1px solid #757575; display: flex">
+                      <div style="width: 50%"><span>Computer Name</span></div>
+                      <div style="width: 50%">
+                        <div style="float: right">
+                          <img
+                            style="margin-right: 8px"
+                            id="computerName"
+                            src="{!$Resource.up_down_arrow}"
+                            onclick="{!c.doSorting}"
+                          />
+                          <img src="{!$Resource.options}" />
+                        </div>
+                      </div>
+                    </div>
+                    <div style="width: calc(15% - 10px); border-right: 1px solid #757575; display: flex">
+                      <div style="width: 50%"><span>Machine Type</span></div>
+                      <div style="width: 50%">
+                        <div style="float: right">
+                          <img
+                            style="margin-right: 8px"
+                            id="machineType"
+                            src="{!$Resource.up_down_arrow}"
+                            onclick="{!c.doSorting}"
+                          />
+                          <img src="{!$Resource.options}" />
+                        </div>
+                      </div>
+                    </div>
+                    <div style="width: calc(15% - 10px); border-right: 1px solid #757575; display: flex">
+                      <div style="width: 50%"><span>OS Family</span></div>
+                      <div style="width: 50%">
+                        <div style="float: right">
+                          <img
+                            style="margin-right: 8px"
+                            id="os"
+                            src="{!$Resource.up_down_arrow}"
+                            onclick="{!c.doSorting}"
+                          />
+                          <img src="{!$Resource.options}" />
+                        </div>
+                      </div>
+                    </div>
+                    <div style="width: calc(15% - 10px); border-right: 1px solid #757575; display: flex">
+                      <div style="width: 50%"><span>Agent Version</span></div>
+                      <div style="width: 50%">
+                        <div style="float: right">
+                          <img
+                            style="margin-right: 8px"
+                            id="agentVersion"
+                            src="{!$Resource.up_down_arrow}"
+                            onclick="{!c.doSorting}"
+                          />
+                          <img src="{!$Resource.options}" />
+                        </div>
+                      </div>
+                    </div>
+                    <div style="width: 30%; border-right: 1px solid #757575; display: flex">
+                      <div style="width: 50%"><span>Details</span></div>
+                      <div style="width: 50%">
+                        <div style="float: right">
+                          <img
+                            style="margin-right: 8px"
+                            id="details"
+                            src="{!$Resource.up_down_arrow}"
+                            onclick="{!c.doSorting}"
+                          />
+                          <img src="{!$Resource.options}" />
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                  <div class="popup-dataTable">
+                    <aura:iteration items="{!v.currentPopUpRecord.impacted}" var="i" indexVar="itr">
+                      <div
+                        data-record="{!itr}"
+                        onmouseenter="{!c.showEyeIconForDetails}"
+                        onmouseleave="{!c.hideEyeIconForDetails}"
+                        class="{!'data hide-'+itr}"
+                      >
+                        <div class="body-fonts" style="width: 24%">{!i.computer_name}</div>
+                        <div class="body-fonts" style="width: 15.5%">{!i.machine_type}</div>
+                        <div class="body-fonts" style="width: 15%">{!i.os_family}</div>
+                        <div class="body-fonts" style="width: 15%">{!i.agent_version}</div>
+                        <div class="body-fonts" style="width: 28.5%">
+                          <lightning:formattedRichText value="{!i.details}" />
+                        </div>
+                        <div style="width: 2%">
+                          <div
+                            data-record="{!itr}"
+                            id="{!'toShowEyeIconTdAgentDEtails-'+itr}"
+                            style="position: relative; display: none"
+                          >
+                            <div
+                              data-record="{!itr}"
+                              id="{!'detailEyeClosed-'+itr}"
+                              style="display: block"
+                              onclick="{!c.showHideDropdown}"
+                            >
+                              <img
+                                src="{!$Resource.EyeIcon}"
+                                id="{!'openEyeImage-'+itr}"
+                                class="ignore-rule"
+                                style="margin-left: 12px"
+                              />
+                              <div
+                                id="{!'listItems-'+itr}"
+                                class="dropdownitem-list"
+                                style="display: none !important; margin-left: -9vw"
+                              >
+                                <div
+                                  class="listItemContainer listItemsOtions"
+                                  data-record="{!itr}"
+                                  data-ignoreall="false"
+                                  onclick="{!c.removeDetailAlert}"
+                                >
+                                  Ignore this alert item
+                                </div>
+                                <div
+                                  class="listItemContainer listItemsOtions"
+                                  data-record="{!itr}"
+                                  data-ignoreall="true"
+                                  onclick="{!c.removeDetailAlert}"
+                                >
+                                  Ignore all alerts in category
+                                </div>
+                              </div>
+                            </div>
+                            <div data-record="{!itr}" id="{!'detailEyeOpen-'+itr}" style="display: none">
+                              <img src="{!$Resource.EyeIconOpen}" class="ignore-rule" />
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    </aura:iteration>
+                  </div>
+                </aura:set>
+              </aura:if>
+            </div>
+            <div class="model-footer-content slds-grid">
+              <div class="slds-col">
+                <div class="back-to-top-btn btn-fonts icon-btn" style="color: #7b3ff2" onclick="{!c.closeModal}">
+                  <span>close</span>
+                </div>
+              </div>
+              <div class="slds-col">
+                <div class="down-bar-button-group">
+                  <div class="share-btn btn-fonts icon-btn" onclick="{!c.forward}">
+                    <div><img src="{!$Resource.share_icon}" /></div>
+                    <div><span>Share</span></div>
+                  </div>
+                  <div class="download-pdf-btn btn-fonts icon-btn" onclick="{!c.downloadAsCsv}">
+                    <div><img src="{!$Resource.download_icon}" /></div>
+                    <div><span>Download As CSV</span></div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+      <div class="slds-backdrop slds-backdrop_open" role="presentation"></div>
+    </aura:if>
+    <aura:if isTrue="{!v.opneEmailpopUp}">
+      <section
+        role="dialog"
+        tabindex="-1"
+        aria-modal="true"
+        aria-labelledby="modal-heading-01"
+        class="slds-modal slds-fade-in-open slds-modal_small"
+        style="z-index: 9002"
+      >
+        <div id="email" class="slds-modal__container">
+          <!--modal-->
+          <div class="modal-content">
+            <div class="slds-modal__header">
+              <h1 id="modal-heading-01" class="slds-modal__title slds-hyphenate">Forward as Mail</h1>
+            </div>
+            <div class="slds-modal__content slds-p-around_medium" id="modal-content-id-2">
+              <h1 style="color: red; font-size: 20px; display: none" id="emailErrorMessage">
+                Enter all required Fields.
+              </h1>
+              <lightning:input type="email" label="To" name="To" value="{!v.mailTo}" multiple="true" required="true" />
+              <lightning:input type="email" label="Cc" name="Cc" value="{!v.mailCc}" multiple="true" />
+              <lightning:input type="email" label="Bcc" name="Bcc" value="{!v.mailBcc}" multiple="true" />
+              <lightning:input type="text" label="Subject" name="subject" value="{!v.mailSubject}" required="true" />
+              <br />
+              <lightning:inputRichText value="{!v.mailBody}" label="Body" labelVisible="true" />
+              <div>
+                <table>
+                  <tr>
+                    <td style="vertical-align: middle; text-align: end; cursor: pointer">
+                      <lightning:icon
+                        iconName="utility:clear"
+                        variant="brand"
+                        alternativeText="Close"
+                        onclick="{!c.closeEmail}"
+                      />&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+                      <lightning:icon
+                        iconName="utility:send"
+                        variant="container"
+                        alternativeText="Send"
+                        onclick="{!c.send}"
+                      />
+                    </td>
+                  </tr>
+                </table>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+      <div class="slds-backdrop slds-backdrop_open" role="presentation" style="z-index: 9001"></div>
+    </aura:if>
+    <aura:if isTrue="{!v.isError}">
+      <section
+        role="dialog"
+        tabindex="-1"
+        aria-modal="true"
+        aria-labelledby="modal-heading-01"
+        class="slds-modal slds-fade-in-open"
+      >
+        <div id="Error" class="slds-modal__container">
+          <div class="modal-content">
+            <div class="slds-modal__header impactCheckModal">
+              <h1 id="modal-heading-01" class="slds-modal__title slds-hyphenate">Error</h1>
+            </div>
+            <div class="slds-modal__content slds-p-around_medium" id="modal-content-id-3">
+              {!v.error}
+              <div>
+                <table>
+                  <tr>
+                    <td style="vertical-align: middle; text-align: end">
+                      <span
+                        style="color: #7b3ff2; font-weight: bold; cursor: pointer; font-family: 'LatoFont'"
+                        onclick="{!c.closeError}"
+                        >Close</span
+                      >
+                    </td>
+                  </tr>
+                </table>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+      <div class="slds-backdrop slds-backdrop_open" role="presentation"></div>
+    </aura:if>
+    <!-- Do not know about these modals -->
+    <!-- <div id="myModal" class="modal" style="display:none">
+    
+    <div class="modal-content">
+        <div class="modelToDownload">
+            <div class="modal-header">
+                <span class="close" onclick="{!c.close}">&times;</span>
+                <h2 class="head" style="font-family: 'LatoFont'">
+                    <aura:if isTrue="{!v.showManagementDiagnostics}">
+                        <aura:if isTrue="{!v.popUpRecordDetail.isImpact}">
+                            Impacted Sites/Groups
+                            <aura:set attribute="else"> Details </aura:set>
+                        </aura:if>
+                        <aura:set attribute="else"> Impacted Agents </aura:set>
+                    </aura:if>
+                </h2>
+            </div>
+            <div class="modal-body">
+                <table
+                    style="
+                        width: 100%;
+                        border-radius: 3px;
+                        box-shadow: 0 3px 5px -1px rgba(0, 0, 0, 0.08), 0 6px 10px 0 rgba(0, 0, 0, 0.08), 0 1px 18px 0 rgba(0, 0, 0, 0.08);
+                        background-color: #fff;
+                    "
+                >
+                    <tr>
+                        <td style="width: 10%; text-align: left; padding: 5px 5px; vertical-align: top" class="popupDataHeader BorderRight">
+                            <aura:unescapedHtml value="{!v.popUpRecordDetail.category}" />
+                        </td>
+                        <td style="width: 10%; text-align: left; padding: 5px 5px; vertical-align: top" class="popupDataHeader BorderRight">
+                            <aura:unescapedHtml value="{!v.popUpRecordDetail.sub_category}" />
+                        </td>
+                        <td style="width: 10%; text-align: left; padding: 5px 5px; vertical-align: top" class="popupDataHeader BorderRight">
+                            <aura:unescapedHtml value="{!v.popUpRecordDetail.severity}" />
+                        </td>
+                        <td style="width: 25%; text-align: left; padding: 5px 5px; vertical-align: top" class="popupDataHeader BorderRight">
+                            <aura:unescapedHtml value="{!v.popUpRecordDetail.description}" />
+                        </td>
+                        <td style="width: 45%; text-align: left; padding: 5px 5px; vertical-align: top" class="popupDataHeader">
+                            <aura:unescapedHtml value="{!v.popUpRecordDetail.remediation}" />
+                        </td>
+                    </tr>
+                    <tr>
+                        <td style="text-align: left; padding: 5px 5px" class="popupData BorderRight">Category</td>
+                        <td style="text-align: left; padding: 5px 5px" class="popupData BorderRight">Issues</td>
+                        <td style="text-align: left; padding: 5px 5px" class="popupData BorderRight">Severity</td>
+                        <td style="text-align: left; padding: 5px 5px" class="popupData BorderRight">Description</td>
+                        <td style="text-align: left; padding: 5px 5px" class="popupData">Remediation</td>
+                    </tr>
+                </table>
+                <br />
+                <br />
+                <div>
+                    <span class="popupDataHeader">Total Impacted: {!v.popUpRecordDetail.total_impacted}</span>
+                </div>
+                <br/>
+                <div class="fixTableHead">
+                    <table width="100%" style="border: solid 1px #f0f0f0; background-color: #fff">
+                        <aura:if isTrue="{!v.showManagementDiagnostics}">
+                            <thead>
+                                <tr>
+                                    <aura:if isTrue="{!v.popUpRecordDetail.isImpact}">
+                                        <th class="BorderRight" style="padding: 5px 5px; border-bottom: solid 1px #f0f0f0">
+                                            <span style="float: left; padding-top: 4px; font-family: 'LatoFont'" class="tdDataHead">Site</span>
+                                            <div class="menu"></div>
+                                            <img src="{!$Resource.sortIcon}" style="float: right; padding-top: 4px" />
+                                        </th>
+                                        <th style="padding: 5px 5px; border-bottom: solid 1px #f0f0f0; z-index: 9999">
+                                            <span style="float: left; padding-top: 4px; font-family: 'LatoFont'" class="tdDataHead BorderRight"
+                                                >Group</span
+                                            >
+                                            <div class="menu"></div>
+                                            <img src="{!$Resource.sortIcon}" style="float: right; padding-top: 4px" />
+                                        </th>
+                                        <th class="BorderRight" style="padding: 5px 5px; border-bottom: solid 1px #f0f0f0; z-index: 9999"></th>
+                                        <aura:set attribute="else">
+                                            <th
+                                                class="BorderRight"
+                                                style="padding: 5px 5px; border-bottom: solid 1px #f0f0f0; border-right: none; z-index: 9999"
+                                            >
+                                                <span style="float: left; padding-top: 4px; font-family: 'LatoFont'" class="tdDataHead"
+                                                    >Details</span
+                                                >
+                                                <div class="menu"></div>
+                                                <img src="{!$Resource.sortIcon}" style="float: right; padding-top: 4px" />
+                                            </th>
+                                            <th
+                                                class="BorderRight"
+                                                style="padding: 5px 5px; border-bottom: solid 1px #f0f0f0; z-index: 9999"
+                                            ></th>
+                                        </aura:set>
+                                    </aura:if>
+                                </tr>
+                            </thead>
+                            <aura:iteration items="{!v.popUpRecordDetail.impacted}" var="imp" indexVar="ind">
+                                <tr
+                                    data-record="{!ind}"
+                                    id="{!'manage-details-tr-'+ind}"
+                                    onmouseenter="{!c.showEyeIconForDetails}"
+                                    onmouseleave="{!c.hideEyeIconForDetails}"
+                                >
+                                    <aura:if isTrue="{!v.popUpRecordDetail.isImpact}">
+                                        <td style="padding: 10px 5px; border-bottom: solid 1px #f0f0f0" class="{!'tdDatad hide-'+ind}">
+                                            {!imp.site}
+                                        </td>
+                                        <td style="padding: 10px 5px; border-bottom: solid 1px #f0f0f0" class="{!'tdDatad hide-'+ind}">
+                                            {!imp.groupName}
+                                        </td>
+                                        <td style="padding: 10px 5px; border-bottom: solid 1px #f0f0f0" class="tdDatad">
+                                            <div
+                                                data-record="{!ind}"
+                                                id="{!'toShowEyeIconTdManageDEtails-'+ind}"
+                                                style="margin-left: -2.34vw; position: relative; display: none"
+                                            >
+                                                <div data-record="{!ind}" id="{!'detailEyeClosed-'+ind}" onclick="{!c.showHideDropdown}">
+                                                  
+                                                    <img
+                                                        src="{!$Resource.EyeIcon}"
+                                                        id="{!'openEyeImage-'+ind}"
+                                                        class="ignore-rule"
+                                                        style="margin-left: 12px"
+                                                    />
+                                                    <div
+                                                        id="{!'listItems-'+ind}"
+                                                        class="dropdownitem-list"
+                                                        style="display: none !important; margin-left: -9vw"
+                                                    >
+                                                        <div
+                                                            class="listItemContainer listItemsOtions"
+                                                            data-record="{!ind}"
+                                                            data-ignoreall="false"
+                                                            onclick="{!c.removeDetailAlert}"
+                                                        >
+                                                            Ignore this alert item
+                                                        </div>
+                                                        <div
+                                                            class="listItemContainer listItemsOtions"
+                                                            data-record="{!ind}"
+                                                            data-ignoreall="true"
+                                                            onclick="{!c.removeDetailAlert}"
+                                                        >
+                                                            Ignore all alerts in category
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                                <div data-record="{!ind}" id="{!'detailEyeOpen-'+ind}" style="display: none">
+                                                    <img src="{!$Resource.EyeIconOpen}" class="ignore-rule" />
+                                                </div>
+                                            </div>
+                                        </td>
+                                        <aura:set attribute="else">
+                                            <td style="padding: 10px 5px; border-bottom: solid 1px #f0f0f0" class="{!'tdDatad hide-'+ind}">
+                                                <aura:unescapedHtml value="{!imp.details}" />
+                                            </td>
+                                            <td style="padding: 10px 5px; border-bottom: solid 1px #f0f0f0" class="tdDatad">
+                                                <div
+                                                    data-record="{!ind}"
+                                                    id="{!'toShowEyeIconTdManageDEtails-'+ind}"
+                                                    style="margin-left: -2.34vw; position: relative; display: none"
+                                                >
+                                                    <div data-record="{!ind}" id="{!'detailEyeClosed-'+ind}" onclick="{!c.showHideDropdown}">
+                                                        
+                                                        <img
+                                                            src="{!$Resource.EyeIcon}"
+                                                            id="{!'openEyeImage-'+ind}"
+                                                            class="ignore-rule"
+                                                            style="margin-left: 12px"
+                                                        />
+                                                        <div
+                                                            id="{!'listItems-'+ind}"
+                                                            class="dropdownitem-list"
+                                                            style="display: none !important; margin-left: -9vw"
+                                                        >
+                                                            <div
+                                                                class="listItemContainer listItemsOtions"
+                                                                data-record="{!ind}"
+                                                                data-ignoreall="false"
+                                                                onclick="{!c.removeDetailAlert}"
+                                                            >
+                                                                Ignore this alert item
+                                                            </div>
+                                                            <div
+                                                                class="listItemContainer listItemsOtions"
+                                                                data-record="{!ind}"
+                                                                data-ignoreall="true"
+                                                                onclick="{!c.removeDetailAlert}"
+                                                            >
+                                                                Ignore all alert in category
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                    <div data-record="{!ind}" id="{!'detailEyeOpen-'+ind}" style="display: none">
+                                                        <img src="{!$Resource.EyeIconOpen}" class="ignore-rule" />
+                                                    </div>
+                                                </div>
+                                            </td>
+                                        </aura:set>
+                                    </aura:if>
+                                </tr>
+                            </aura:iteration>
+                            <aura:set attribute="else">
+                                <thead>
+                                    <tr>
+                                        <th class="BorderRight" style="width: 25%; padding: 5px 5px; border-bottom: solid 1px #f0f0f0">
+                                            <span style="float: left; padding-top: 4px" class="tdDataHead BorderRight">Computer Name</span>
+                                            <div class="menu"></div>
+                                            <img src="{!$Resource.sortIcon}" style="float: right; padding-top: 4px" />
+                                        </th>
+                                        <th class="BorderRight" style="width: 15%; padding: 5px 5px; border-bottom: solid 1px #f0f0f0">
+                                            <span style="float: left; padding-top: 4px" class="tdDataHead">Machine Type</span>
+                                            <div class="menu"></div>
+                                            <img src="{!$Resource.sortIcon}" style="float: right; padding-top: 4px" />
+                                        </th>
+                                        <th class="BorderRight" style="width: 15%; padding: 5px 5px; border-bottom: solid 1px #f0f0f0">
+                                            <span style="float: left; padding-top: 4px" class="tdDataHead BorderRight">OS Family</span>
+                                            <div class="menu"></div>
+                                            <img src="{!$Resource.sortIcon}" style="float: right; padding-top: 4px" />
+                                        </th>
+                                        <th class="BorderRight" style="width: 15%; padding: 5px 5px; border-bottom: solid 1px #f0f0f0">
+                                            <span style="float: left; padding-top: 4px" class="tdDataHead BorderRight">Agent Version</span>
+                                            <div class="menu"></div>
+                                            <img src="{!$Resource.sortIcon}" style="float: right; padding-top: 4px" />
+                                        </th>
+                                        <th
+                                            class="BorderRight"
+                                            style="width: 30%; padding: 5px 10px; border-bottom: solid 1px #f0f0f0; z-index: 9999"
+                                        >
+                                            <span style="float: left; padding-top: 4px" class="tdDataHead">Details</span>
+                                            <div class="menu"></div>
+                                            <img src="{!$Resource.sortIcon}" style="float: right; padding-top: 4px" />
+                                        </th>
+                                        <th class="BorderRight" style="padding: 5px 5px; border-bottom: solid 1px #f0f0f0; z-index: 9999"></th>
+                                    </tr>
+                                </thead>
+                                <aura:iteration items="{!v.popUpRecordDetail.impacted}" var="imp" indexVar="ind">
+                                    <tr
+                                        data-record="{!ind}"
+                                        id="{!'agent-details-tr-'+ind}"
+                                        onmouseenter="{!c.showEyeIconForDetails}"
+                                        onmouseleave="{!c.hideEyeIconForDetails}"
+                                    >
+                                        <td style="padding: 10px 5px; border-bottom: solid 1px #f0f0f0" class="{!'tdDatad hide-'+ind}">
+                                            {!imp.computer_name}
+                                        </td>
+                                        <td style="padding: 10px 5px; border-bottom: solid 1px #f0f0f0" class="{!'tdDatad hide-'+ind}">
+                                            {!imp.machine_type}
+                                        </td>
+                                        <td style="padding: 10px 5px; border-bottom: solid 1px #f0f0f0" class="{!'tdDatad hide-'+ind}">
+                                            {!imp.os_family}
+                                        </td>
+                                        <td style="padding: 10px 5px; border-bottom: solid 1px #f0f0f0" class="{!'tdDatad hide-'+ind}">
+                                            {!imp.agent_version}
+                                        </td>
+                                        <td
+                                            style="padding: 10px 5px; border-bottom: solid 1px #f0f0f0; word-break: break-all"
+                                            class="{!'tdDatad hide-'+ind}"
+                                        >
+                                            <aura:unescapedHtml value="{!imp.details}" />
+                                        </td>
+                                        <td style="padding: 10px 5px; border-bottom: solid 1px #f0f0f0" class="tdDatad">
+                                            <div
+                                                data-record="{!ind}"
+                                                id="{!'toShowEyeIconTdAgentDEtails-'+ind}"
+                                                style="margin-left: -2.34vw; position: relative; display: none"
+                                            >
+                                                <div
+                                                    data-record="{!ind}"
+                                                    id="{!'detailEyeClosed-'+ind}"
+                                                    style="display: block"
+                                                    onclick="{!c.showHideDropdown}"
+                                                >
+                                                    
+                                                    <img
+                                                        src="{!$Resource.EyeIcon}"
+                                                        id="{!'openEyeImage-'+ind}"
+                                                        class="ignore-rule"
+                                                        style="margin-left: 12px"
+                                                    />
+                                                    <div
+                                                        id="{!'listItems-'+ind}"
+                                                        class="dropdownitem-list"
+                                                        style="display: none !important; margin-left: -9vw"
+                                                    >
+                                                        <div
+                                                            class="listItemContainer listItemsOtions"
+                                                            data-record="{!ind}"
+                                                            data-ignoreall="false"
+                                                            onclick="{!c.removeDetailAlert}"
+                                                        >
+                                                            Ignore this alert item
+                                                        </div>
+                                                        <div
+                                                            class="listItemContainer listItemsOtions"
+                                                            data-record="{!ind}"
+                                                            data-ignoreall="true"
+                                                            onclick="{!c.removeDetailAlert}"
+                                                        >
+                                                            Ignore all alerts in category
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                                <div data-record="{!ind}" id="{!'detailEyeOpen-'+ind}" style="display: none">
+                                                    <img src="{!$Resource.EyeIconOpen}" class="ignore-rule" />
+                                                </div>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                </aura:iteration>
+                            </aura:set>
+                        </aura:if>
+                    </table>
+                </div>
+                <br />
+            </div>
+        </div>
+        <div class="modal-footer">
+            <table width="100%" style="background-color: white">
+                <tr style="height: 30px">
+                    <td style="vertical-align: middle">
+                        <img src="{!$Resource.UpArrow}" />
+                        <span style="color: #7b3ff2; font-weight: bold; cursor: pointer; font-family: 'LatoFont'" onclick="{!c.close}"
+                            >Close</span
+                        >
+                    </td>
+                    <td style="vertical-align: middle; text-align: end">
+                        <span
+                            style="
+                                margin-right: 10px;
+                                border-radius: 3px;
+                                border: solid 1px #7b3ff2;
+                                padding: 5px 12px;
+                                font-weight: bold;
+                                cursor: pointer;
+                            "
+                            onclick="{!c.forwardDetail}"
+                        >
+                            <img src="{!$Resource.DataForward}" /><span style="color: #7b3ff2; font-family: 'LatoFont'">&nbsp;Forward </span>
+                        </span>
+                        <span
+                            style="
+                                background-color: #7b3ff2;
+                                padding: 5px 12px;
+                                border: solid 2px #7b3ff2;
+                                border-radius: 3px;
+                                font-weight: bold;
+                                cursor: pointer;
+                                color: white;
+                                font-family: 'LatoFont';
+                            "
+                            onclick="{!c.DownloadSingleDetail}"
+                        >
+                            <img src="{!$Resource.DataDownload}" />&nbsp;Download as CSV
+                        </span>
+                    </td>
+                </tr>
+            </table>
+            <br />
+        </div>
+    </div>
+    </div> -->
+  </div>
+</aura:component>

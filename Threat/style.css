@@ -1,0 +1,924 @@
+@font-face {
+  font-family: "LatoFont";
+  src: url(/community/resource/LatoFont), url(/resource/LatoFont);
+}
+@font-face {
+  font-family: "GothamFont";
+  src: url(/community/resource/GothamFont), url(/resource/GothamFont);
+}
+/* new development */
+.THIS .main-container {
+  padding: 72px 20px 40px 20px;
+  background: #ffffff;
+  border-top: 8px solid #d1bcff;
+}
+.THIS .containerPart {
+  max-width: 1333px;
+  width: 100%;
+  margin-left: auto;
+  margin-right: auto;
+  min-width: 1060px;
+}
+.THIS .header-section {
+  padding: 0 0 40px 0;
+  border-bottom: 1px solid #f1eef1;
+}
+.THIS .header {
+  color: #262626;
+  font-feature-settings: "clig" off, "liga" off;
+  font-family: "LatoFont";
+  font-size: 34px;
+  font-style: normal;
+  font-weight: 900;
+  line-height: 44px;
+  letter-spacing: 0.6px;
+  margin-bottom: 6px;
+}
+.THIS .table-data-container-nrlist .body-fonts {
+  color: #262626;
+  font-feature-settings: "clig" off, "liga" off;
+  font-family: "LatoFont";
+  font-size: 13px;
+  font-style: normal;
+  font-weight: 400;
+  line-height: 20px; /* 153.846% */
+  letter-spacing: 0.1px;
+  text-transform: capitalize;
+}
+
+.THIS .btn-group {
+  float: right;
+  display: flex;
+  margin-bottom: 30px;
+  gap: 16px;
+}
+
+.THIS .logo > img {
+  width: 80px;
+  height: 44px;
+}
+.THIS .acc-detail-container {
+  margin-top: 24px;
+  display: flex;
+  width: 100%;
+  justify-content: space-between;
+  align-items: flex-start;
+  align-self: stretch;
+}
+.THIS .pad-right {
+  padding-right: 10px;
+}
+.THIS .detail-section {
+  width: 20%;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 12px;
+  padding-left: 53px;
+  padding-right: 20px;
+  flex: 1;
+}
+
+.THIS .detail-section:last-child {
+  padding-right: 0;
+  border-right: 0;
+}
+.THIS .Caption2 {
+  color: var(--neutral-n-60, #757575);
+  font-feature-settings: "clig" off, "liga" off;
+  /* Captions/Caption 2 */
+  font-family: "LatoFont";
+  font-size: 11px;
+  font-style: normal;
+  font-weight: 400;
+  line-height: 16px; /* 145.455% */
+  letter-spacing: 0.5px;
+}
+.THIS .detail-section .Subtitle1 {
+  color: var(--neutral-n-90, #262626);
+  font-feature-settings: "clig" off, "liga" off;
+  /* Subtitles/Subtitle 1 */
+  font-family: "LatoFont";
+  font-size: 13px;
+  font-style: normal;
+  font-weight: 900;
+  line-height: 20px; /* 153.846% */
+  letter-spacing: 0.5px;
+  max-height: 20px;
+}
+.THIS .share-btn {
+  border-radius: 4px;
+  border: 1px solid #7b3ff2;
+  color: #7b3ff2;
+  background: #ffffff;
+  width: 48px;
+  width: 24px;
+}
+.THIS .download-pdf-btn {
+  border-radius: 4px;
+  background: #7b3ff2;
+  color: #ffffff;
+  width: 133px;
+  width: 24px;
+}
+.THIS .btn-fonts {
+  font-feature-settings: "clig" off, "liga" off;
+  font-family: "LatoFont";
+  font-size: 12px;
+  font-style: normal;
+  font-weight: 700;
+  line-height: 16.8px; /* 153.846% */
+  letter-spacing: 1%;
+  text-transform: capitalize;
+}
+.THIS .btn-fonts1 {
+  font-feature-settings: "clig" off, "liga" off;
+  font-family: "LatoFont";
+  font-size: 11px;
+  font-style: normal;
+  font-weight: 700;
+  line-height: 16px; /* 145.455% */
+  letter-spacing: 0.5px;
+  text-transform: capitalize;
+  padding: 4px 12px;
+  cursor: pointer;
+}
+.THIS .icon-btn {
+  display: flex;
+  padding: 0;
+  justify-content: center;
+  align-items: center;
+  gap: 4px;
+  cursor: pointer;
+  border-radius: 4px;
+}
+.THIS .share-btn {
+  font-size: 12px;
+  font-style: normal;
+  font-weight: 700;
+  line-height: 140%;
+  letter-spacing: 0.12px;
+  color: #854ef3;
+}
+.THIS .share-btn {
+  min-width: 48px;
+  height: 24px;
+  width: 100%;
+}
+.THIS .download-pdf-btn.btn-fonts {
+  min-width: 133px;
+  height: 24px;
+  width: 100%;
+  border-radius: 4px;
+  background: #7b3ff2;
+  color: #ffffff;
+  font-size: 12px;
+  font-style: normal;
+  font-weight: 700;
+  line-height: 140%;
+  letter-spacing: 0.12px;
+  text-transform: none;
+}
+
+.THIS .section {
+  margin-top: 60px;
+}
+.THIS .section-title {
+  color: #262626;
+  font-feature-settings: "clig" off, "liga" off;
+
+  /* Headlines/Headline 3 */
+  font-family: "LatoFont";
+  font-size: 18px;
+  font-style: normal;
+  font-weight: 900;
+  line-height: 24px; /* 133.333% */
+  letter-spacing: 0.6px;
+}
+.THIS .sub-section {
+  margin-top: 32px;
+  /*border-radius: 3px;*/
+  align-self: stretch;
+  width: 100%;
+  /*box-shadow: 0px 2px 4px 0px rgba(34, 35, 37, 0.1), 0px -1px 4px 0px rgba(34, 35, 37, 0.04);*/
+  border-radius: 4px;
+  border: 1px solid #f1eef1;
+  box-shadow: 0px -1px 4px 0px rgba(34, 35, 37, 0.04), 0px 2px 4px 0px rgba(34, 35, 37, 0.1);
+}
+.THIS .section-overview {
+  margin-top: 40px;
+}
+.THIS .sub-section-title {
+  color: var(--neutral-n-60, #757575);
+  text-align: left;
+  font-feature-settings: "clig" off, "liga" off;
+  font-family: "LatoFont";
+  font-size: 11px;
+  font-style: normal;
+  font-weight: 900;
+  line-height: 16px; /* 145.455% */
+  letter-spacing: 1px;
+  text-transform: uppercase;
+}
+.THIS .sub-section-content {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  flex-direction: column;
+  gap: 12px;
+  flex: 1;
+  padding: 0 20px 0 65.7px;
+}
+.THIS .sub-section .sub-section-content:nth-child(1) {
+  padding-left: 0;
+}
+.THIS .sub-section .sub-section-content:last-child {
+  padding-right: 0;
+  border-right: 0;
+}
+.THIS .headLine3 {
+  color: #262626;
+  font-family: "LatoFont";
+  font-size: 18px;
+  font-style: normal;
+  font-weight: 900;
+  line-height: 24px;
+  letter-spacing: 0.6px;
+}
+.THIS .overview-sub-section1 {
+  display: flex;
+  padding: 24px 32px;
+  height: 100px;
+  width: 100%;
+  justify-content: space-between;
+  align-items: flex-start;
+}
+.THIS .overview-sub-section2 {
+  padding: 16px;
+}
+.THIS .Subtitle2 {
+  color: #757575;
+  font-feature-settings: "clig" off, "liga" off;
+
+  /* Subtitles/Subtitle 2 */
+  font-family: "LatoFont";
+  font-size: 13px;
+  font-style: normal;
+  font-weight: 700;
+  line-height: 20px; /* 153.846% */
+  letter-spacing: 0.5px;
+}
+.THIS .agent-by-os-content {
+  display: grid;
+  grid-row-gap: 16px;
+  width: 25%;
+}
+.THIS .d-center {
+  display: flex;
+  align-items: center;
+  font-family: "LatoFont";
+  font-size: 13px;
+  font-weight: 400;
+  line-height: 20px;
+  text-align: left;
+}
+.THIS .side-border {
+  border-right: 1px solid #e9e9e9;
+}
+.THIS .agent-by-os-content div {
+  display: flex;
+  gap: 12px;
+  width: 100%;
+}
+.THIS .circle {
+  width: 15px !important;
+  height: 15px;
+  border-radius: 50%;
+}
+.THIS .circle-small {
+  width: 10px !important;
+  height: 10px;
+  border-radius: 50%;
+  margin-top: 5px;
+}
+.THIS .section-with-chart-info {
+  display: grid;
+  grid-row-gap: 8px;
+  width: 100%;
+}
+.THIS .section-with-chart-info div {
+  display: flex;
+  gap: 8px;
+  width: 100%;
+}
+.THIS .ticket-list-item {
+  box-shadow: none;
+  display: flex;
+  width: 100%;
+  padding: 16px;
+  align-items: flex-start;
+  gap: 24px !important;
+  margin-top: 13px;
+  border-radius: 4px;
+  border: 1px solid #f1eef1;
+}
+.THIS .table-data-container .ticket-list-item {
+  float: left !important;
+  width: 100% !important;
+}
+
+.THIS .table-data-container {
+  height: auto;
+  max-height: 300px;
+  overflow-y: auto;
+  padding: 0px 4px 5px 4px;
+  overflow-x: clip;
+}
+
+.THIS .product-and-service-table {
+  border: 1px solid #e9e9e9;
+  border-radius: 3px;
+}
+.THIS .btn-group-container {
+  display: flex;
+  gap: 24px;
+  border: 1px solid #7b3ff2;
+  border-radius: 3px;
+  padding: 4px;
+  width: fit-content;
+  color: #7b3ff2;
+}
+.THIS .down-bar {
+  background: #000;
+}
+.THIS .down-bar-content {
+  padding: 12px 10px;
+  display: flex;
+}
+.THIS .down-bar-button-group {
+  float: right;
+  display: flex;
+  gap: 24px;
+  cursor: pointer;
+}
+.THIS .back-to-top-btn {
+  display: flex;
+  gap: 16px;
+  color: #ffffff;
+  float: left;
+  cursor: pointer;
+}
+.THIS .search-btn-combo {
+  flex: 1 0 0;
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+}
+.THIS .search-btn-container {
+  border-radius: 3px;
+  border: 1px solid #d9d9d9;
+}
+.THIS .place-holder {
+  color: #757575;
+  font-feature-settings: "clig" off, "liga" off;
+  /* Placeholder */
+  font-family: "LatoFont";
+  font-size: 13px;
+  font-style: italic;
+  font-weight: 400;
+  line-height: 20px; /* 153.846% */
+  letter-spacing: 0.1px;
+  width: 285px;
+}
+.THIS .recomandation-title {
+  color: var(--neutral-n-60, #757575);
+  font-feature-settings: "clig" off, "liga" off;
+
+  /* Buttons/Button 1 */
+  font-family: "LatoFont";
+  font-size: 13px;
+  font-style: normal;
+  font-weight: 700;
+  line-height: 20px; /* 153.846% */
+  letter-spacing: 0.5px;
+  text-transform: capitalize;
+}
+.THIS .table-title {
+  display: flex;
+  gap: 24px;
+  padding: 0px 16px;
+  align-items: center;
+}
+
+.THIS .hold-status {
+  background-color: #efe5fd;
+  width: 25px;
+}
+.THIS .pending-status {
+  background-color: #d4bff9;
+  width: 25px;
+}
+.THIS .closed-status {
+  background-color: #9665f4;
+}
+.THIS .solved-status {
+  background-color: #b694f6;
+}
+.THIS .open-status {
+  background-color: #000000;
+}
+.THIS .place-holder .slds-input {
+  border: 0;
+}
+.THIS .place-holder .slds-input:active,
+.THIS .place-holder .slds-input:focus {
+  box-shadow: none;
+}
+
+.THIS .helpTextClass {
+  background-color: #000000;
+  color: #ffffff;
+  width: 150px;
+  height: auto;
+  padding: 8px;
+}
+.THIS .displayHelp {
+  display: block;
+}
+.THIS .hideHelp {
+  display: none;
+}
+.THIS .toggle-btn {
+  --slds-c-checkbox-toggle-color-background-checked-focus: #7b3ff2;
+  --slds-c-checkbox-toggle-color-border: #ffffff;
+}
+.THIS .bar-label {
+  width: 94px;
+  white-space: normal;
+  word-wrap: break-word;
+}
+.THIS .hide-div {
+  display: none;
+}
+.THIS .Inputcustomer {
+  width: 85%;
+  height: 20px !important;
+}
+.THIS .column1 {
+  flex-basis: 15%;
+}
+.THIS .column2 {
+  flex-basis: 70%;
+}
+.THIS .column3 {
+  flex-basis: 15%;
+}
+.THIS .table-title-nrlist {
+  display: flex;
+  width: 100%;
+  padding: 16px;
+  align-items: flex-start;
+  gap: 24px;
+  margin-top: 13px;
+}
+.THIS .table-title-nrlist .Caption2 {
+  flex-basis: inherit;
+  color: #262626;
+  font-feature-settings: "clig" off, "liga" off;
+  font-family: "LatoFont";
+  font-size: 13px;
+  font-style: normal;
+  font-weight: bold;
+  line-height: 20px;
+  letter-spacing: 0.1px;
+  text-transform: capitalize;
+}
+.THIS .table-title-nrlist .column1,
+.THIS .table-data-container-nrlist .nrlist_column1 {
+  width: 20%;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 200px; /* Adjust the width as necessary */
+}
+.THIS .table-title-nrlist .column2,
+.THIS .table-data-container-nrlist .nrlist_column2 {
+  width: calc(80% - 150px);
+}
+.THIS .table-data-container-nrlist .nrlist_column3 {
+  width: 150px !important;
+  margin-left: auto;
+}
+.THIS .table-title .Caption2 {
+  font-weight: bold !important;
+  color: #000 !important;
+  font-size: 13px !important;
+}
+
+.THIS .table-title .column1,
+.THIS .table-data-container .column1 {
+  width: 15% !important;
+  flex-basis: inherit !important;
+  color: #000 !important;
+  float: left;
+}
+.THIS .table-title .column2,
+.THIS .table-data-container .column2 {
+  width: 85% !important;
+  flex-basis: inherit !important;
+  color: #000 !important;
+  float: left;
+}
+/**/
+.THIS .blackBar {
+  width: 100%;
+  flex-grow: 0;
+  padding: 12px 100px 12px 100px;
+  background-color: #000;
+  display: inline-flex;
+}
+
+.THIS img.SentinelOne {
+  flex-grow: 0;
+  object-fit: contain;
+  padding: 7px;
+}
+.THIS .report_title h2 {
+  color: #fff !important;
+  padding: 6px;
+  font-size: 17px;
+}
+.THIS #threatTrendLine .highcharts-axis-labels text {
+  fill: #262626 !important;
+  font-size: 11px !important;
+  font-style: normal;
+  font-weight: 400;
+  line-height: 16px;
+  letter-spacing: 0.5px;
+  font-family: LatoFont;
+  color: #262626 !important;
+}
+.THIS #engineVsTpFpChartContainer .highcharts-xaxis-labels > span {
+  left: 0 !important;
+  color: #757575 !important;
+  font-family: LatoFont !important;
+  font-size: 11px !important;
+  font-style: normal;
+  font-weight: 400;
+  line-height: 16px;
+  letter-spacing: 0.5px;
+}
+.THIS #engineVsTpFpChartContainer .highcharts-xaxis-labels > span .bar-label {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.THIS #engineVsTpFpChartContainer {
+  margin-top: -16px !important;
+}
+
+.THIS #engineTpFpDiv .sub-section-title {
+  position: relative;
+  display: inline-block;
+  z-index: 1;
+}
+.THIS #enginePDDiv .sub-section-title,
+.THIS #threatPDDiv .sub-section-title {
+  position: relative;
+  display: inline-block;
+  z-index: 1;
+}
+.THIS #enginevsProtectDetectChart .highcharts-xaxis-labels > span,
+.THIS #threatVsDetectChart .highcharts-xaxis-labels > span {
+  left: 0 !important;
+  color: #757575 !important;
+  font-family: LatoFont !important;
+  font-size: 11px !important;
+  font-style: normal;
+  font-weight: 400;
+  line-height: 16px;
+  letter-spacing: 0.5px;
+}
+.THIS #enginevsProtectDetectChart .highcharts-xaxis-labels > span .bar-label,
+.THIS #threatVsDetectChart .highcharts-xaxis-labels > span .bar-label {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.THIS #enginevsProtectDetectChart,
+.THIS #threatVsDetectChart {
+  margin-top: -16px !important;
+}
+
+.THIS .displaynone {
+  display: none;
+}
+.THIS #engineVsTpFpChartContainer .highcharts-container .highcharts-legend text {
+  color: #262626 !important;
+  font-family: LatoFont !important;
+  font-size: 11px !important;
+  font-style: normal;
+  font-weight: 400 !important;
+  line-height: 16px;
+  letter-spacing: 0.5px;
+  fill: #262626 !important;
+}
+.THIS #engineVsTpFpChartContainer .highcharts-axis-labels text {
+  color: #757575 !important;
+  font-family: LatoFont !important;
+  font-size: 11px !important;
+  font-style: normal;
+  font-weight: 400 !important;
+  line-height: 16px;
+  letter-spacing: 0.5px;
+  fill: #757575 !important;
+}
+
+.THIS #enginePDDiv .highcharts-container .highcharts-legend text {
+  color: #262626 !important;
+  font-family: LatoFont !important;
+  font-size: 11px !important;
+  font-style: normal;
+  font-weight: 400 !important;
+  line-height: 16px;
+  letter-spacing: 0.5px;
+  fill: #262626 !important;
+}
+.THIS #enginePDDiv .highcharts-axis-labels text {
+  color: #757575 !important;
+  font-family: LatoFont !important;
+  font-size: 11px !important;
+  font-style: normal;
+  font-weight: 400 !important;
+  line-height: 16px;
+  letter-spacing: 0.5px;
+  fill: #757575 !important;
+}
+
+.THIS #threatPDDiv .highcharts-container .highcharts-legend text {
+  color: #262626 !important;
+  font-family: LatoFont !important;
+  font-size: 11px !important;
+  font-style: normal;
+  font-weight: 400 !important;
+  line-height: 16px;
+  letter-spacing: 0.5px;
+  fill: #262626 !important;
+}
+.THIS #threatPDDiv .highcharts-axis-labels text {
+  color: #757575 !important;
+  font-family: LatoFont !important;
+  font-size: 11px !important;
+  font-style: normal;
+  font-weight: 400 !important;
+  line-height: 16px;
+  letter-spacing: 0.5px;
+  fill: #757575 !important;
+}
+.THIS .highcharts-label text {
+  color: #262626 !important;
+  font-family: LatoFont !important;
+  font-size: 11px !important;
+  font-style: normal;
+  font-weight: 400 !important;
+  line-height: 16px;
+  letter-spacing: 0.5px;
+  fill: #262626 !important;
+}
+
+.THIS #topSiteDiv .highcharts-xaxis-labels > span,
+.THIS #topAgentDiv .highcharts-xaxis-labels > span {
+  left: 0 !important;
+  color: #757575 !important;
+  font-family: LatoFont !important;
+  font-size: 11px !important;
+  font-style: normal;
+  font-weight: 400;
+  line-height: 16px;
+  letter-spacing: 0.5px;
+}
+.THIS #topSiteDiv .highcharts-xaxis-labels > span .bar-label,
+.THIS #topAgentDiv .highcharts-xaxis-labels > span .bar-label {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.THIS #topSiteDiv .sub-section-title,
+.THIS #topAgentDiv .sub-section-title {
+  position: relative;
+  display: inline-block;
+  z-index: 1;
+}
+.THIS #topSiteDiv #topSitesChart,
+.THIS #topAgentDiv #topAgentChart {
+  margin-top: -16px !important;
+}
+.THIS #SiteAndAgentDiv .highcharts-container .highcharts-legend text {
+  color: #262626 !important;
+  font-family: LatoFont !important;
+  font-size: 11px !important;
+  font-style: normal;
+  font-weight: 400 !important;
+  line-height: 16px;
+  letter-spacing: 0.5px;
+  fill: #262626 !important;
+}
+.THIS #SiteAndAgentDiv .highcharts-axis-labels text {
+  color: #757575 !important;
+  font-family: LatoFont !important;
+  font-size: 11px !important;
+  font-style: normal;
+  font-weight: 400 !important;
+  line-height: 16px;
+  letter-spacing: 0.5px;
+  fill: #757575 !important;
+}
+
+.THIS #hashDiv .highcharts-xaxis-labels > span,
+.THIS #appDiv .highcharts-xaxis-labels > span {
+  left: 0 !important;
+  color: #757575 !important;
+  font-family: LatoFont !important;
+  font-size: 11px !important;
+  font-style: normal;
+  font-weight: 400;
+  line-height: 16px;
+  letter-spacing: 0.5px;
+}
+.THIS #hashDiv .highcharts-xaxis-labels > span .bar-label,
+.THIS #appDiv .highcharts-xaxis-labels > span .bar-label {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.THIS #hashDiv .sub-section-title,
+.THIS #appDiv .sub-section-title {
+  position: relative;
+  display: inline-block;
+  z-index: 1;
+}
+.THIS #appDiv #topApplicationChart,
+.THIS #hashDiv #topHashChart {
+  margin-top: -16px !important;
+}
+.THIS #hashAndApplicationDiv .highcharts-container .highcharts-legend text {
+  color: #262626 !important;
+  font-family: LatoFont !important;
+  font-size: 11px !important;
+  font-style: normal;
+  font-weight: 400 !important;
+  line-height: 16px;
+  letter-spacing: 0.5px;
+  fill: #262626 !important;
+}
+.THIS #hashAndApplicationDiv .highcharts-axis-labels text {
+  color: #757575 !important;
+  font-family: LatoFont !important;
+  font-size: 11px !important;
+  font-style: normal;
+  font-weight: 400 !important;
+  line-height: 16px;
+  letter-spacing: 0.5px;
+  fill: #757575 !important;
+}
+.THIS #noisyHashDiv .show_only {
+  position: absolute;
+  z-index: 1;
+  right: 210px;
+}
+.THIS #topNoisyHashChart .highcharts-axis-labels > span {
+  left: 0 !important;
+  color: #757575 !important;
+  font-family: LatoFont !important;
+  font-size: 11px !important;
+  font-style: normal;
+  font-weight: 400;
+  line-height: 16px;
+  letter-spacing: 0.5px;
+}
+.THIS #topNoisyHashChart {
+  margin-top: -16px !important;
+}
+.THIS #noisyHashDiv .sub-section-title {
+  z-index: 1;
+}
+.THIS .toggle-btn.show_only .slds-checkbox_toggle.slds-grid {
+  display: flex;
+  flex-direction: row-reverse;
+  gap: 8px;
+  align-items: center;
+}
+.THIS #noisyHashDiv .slds-checkbox_toggle .slds-checkbox_faux,
+.THIS #noisyHashDiv .slds-checkbox_toggle .slds-checkbox--faux,
+.THIS #noisyHashDiv .slds-checkbox--toggle .slds-checkbox_faux,
+.THIS #noisyHashDiv .slds-checkbox--toggle .slds-checkbox--faux {
+  box-shadow: none;
+}
+.THIS .toggle-btn.show_only .slds-form-element__label {
+  color: #757575;
+  font-size: 13px;
+  font-style: normal;
+  font-weight: 400;
+  line-height: 20px;
+  letter-spacing: 0.1px;
+  font-family: "LatoFont";
+  margin: 0;
+  padding: 0;
+}
+
+.THIS #topNoisyHashChart .highcharts-xaxis-labels text {
+  color: #757575 !important;
+  font-family: LatoFont !important;
+  font-size: 11px !important;
+  font-style: normal;
+  font-weight: 400;
+  line-height: 16px;
+  letter-spacing: 0.5px;
+  fill: #757575 !important;
+}
+.THIS .search-btn-container.icon-btn .place-holder .slds-input {
+  min-height: 28px;
+  padding-left: 8px;
+  padding-right: 8px;
+  height: 28px;
+}
+.THIS .search-btn-container.icon-btn {
+  max-width: 285px;
+  width: 100%;
+  padding: 0 8px 0 8px;
+  height: 32px;
+}
+.THIS .share-btn-custom {
+  height: 32px;
+  width: 100%;
+  max-width: 164px;
+  min-width: 164px;
+  font-size: 13px;
+  font-style: normal;
+  font-weight: 700;
+  line-height: 20px;
+  letter-spacing: 0.5px;
+  text-transform: capitalize;
+  display: flex;
+  gap: 6px;
+  align-items: center;
+  color: #7b3ff2;
+}
+.THIS .table-title-nrlist {
+  padding-bottom: 0;
+  padding-top: 0;
+}
+.THIS .table-title-nrlist .Caption2 {
+  text-transform: capitalize;
+  color: #757575;
+  font-size: 11px;
+  font-style: normal;
+  font-weight: 400;
+  line-height: 16px;
+  letter-spacing: 0.5px;
+}
+.THIS .table-title-nrlist .Caption1 {
+  width: 20% !important;
+}
+.THIS .table-title-nrlist .Caption2 {
+  width: calc(80% - 150px);
+}
+.THIS .table-title-nrlist .Caption3 {
+  width: 150px !important;
+  margin-left: auto;
+}
+.THIS .slds-checkbox_toggle .slds-checkbox_faux {
+  width: 32px;
+  height: 16px;
+  border: 0;
+}
+.THIS .slds-checkbox_toggle .slds-checkbox_faux:after {
+  top: 2px;
+  left: 2px;
+  width: 12px;
+  height: 12px;
+}
+.THIS .slds-checkbox_toggle [type="checkbox"]:checked + .slds-checkbox_faux_container .slds-checkbox_faux:before {
+  top: 2px;
+  right: 2px;
+  width: 12px;
+  height: 12px;
+}
+.THIS .slds-checkbox_toggle [type="checkbox"]:checked + .slds-checkbox_faux_container .slds-checkbox_faux:after {
+  display: none;
+}
+.THIS .slds-checkbox_toggle .slds-checkbox_faux {
+  background: #7b3ff2;
+}
+
+.THIS #topNoisyHashChart .highcharts-axis-labels text {
+  color: #757575 !important;
+  fill: #757575 !important;
+}
+.THIS .highcharts-halo {
+  display: none;
+}
+.THIS .highcharts-container {
+  color: white;
+  width: 100% !important;
+}

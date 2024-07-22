@@ -1,0 +1,467 @@
+<aura:component
+  controller="ServiceExecutiveReportController"
+  implements="force:appHostable,flexipage:availableForAllPageTypes,forceCommunity:availableForAllPageTypes"
+  access="global"
+>
+  <ltng:require
+    scripts="{!join(',',$Resource.HighCharts2, $Resource.heatmap)}"
+    afterScriptsLoaded="{!c.scriptsLoaded}"
+  />
+
+  <aura:attribute name="spinner" type="boolean" default="false" />
+  <aura:attribute name="customerId" type="string" default="" />
+  <aura:attribute name="reportId" type="string" default="" />
+  <aura:attribute name="isCommunity" type="boolean" default="false" />
+  <aura:registerEvent name="myevent" type="c:fireEvent" />
+  <aura:attribute name="customersList" type="object" />
+  <aura:attribute name="datesList" type="object" />
+  <aura:attribute name="listOfReports" type="object" />
+  <aura:attribute name="reportInformation" type="object" />
+  <aura:attribute name="nonEscalatedIncidentsCount" type="object" />
+  <aura:attribute name="escalatedIncidentsCount" type="object" />
+  <aura:attribute name="error" type="string" />
+  <aura:attribute name="mailTo" type="string" />
+  <aura:attribute name="mailCc" type="string" />
+  <aura:attribute name="mailBcc" type="string" />
+  <aura:attribute name="mailSubject" type="string" />
+  <aura:attribute name="mailBody" type="string" />
+  <aura:attribute name="availableDates" type="string[]" />
+  <aura:attribute name="selectedDate" type="string" />
+  <aura:attribute name="date" type="date" />
+  <aura:attribute name="refresh" type="boolean" default="false" />
+  <aura:attribute name="communityUrl" type="boolean" default="false" />
+
+  <!-- New UI development -->
+  <aura:attribute name="headerDetail" type="Object" />
+  <aura:attribute name="overview" type="Object" />
+  <aura:attribute name="notRecommendation" type="Object" />
+  <aura:attribute name="notRecommendationCopy" type="List" />
+  <aura:attribute name="threatAnalysis" type="Object" />
+  <aura:attribute name="recommendations" type="List" />
+  <aura:attribute name="recommendationsCopy" type="List" />
+  <aura:attribute name="chartColors" type="Object" />
+  <aura:attribute name="value" type="String" />
+  <aura:attribute name="recValue" type="String" />
+  <aura:attribute name="reportDate" type="String" />
+  <aura:attribute name="shareReport" type="Boolean" default="false" />
+  <aura:attribute name="hasMultipleRecord" type="boolean" default="false" />
+  <aura:attribute name="selectDate" type="boolean" default="false" />
+  <aura:attribute name="selectCustName" type="boolean" default="false" />
+  <!-- <aura:handler name="init" value="{!this}" action="{!c.doinit}" /> -->
+
+  <aura:if isTrue="{!v.spinner}">
+    <div aura:id="spinnerId" class="slds-spinner_container" style="position: fixed">
+      <div class="slds-spinner--brand slds-spinner slds-spinner--large slds-is-fixed" role="alert">
+        <span class="slds-assistive-text">Loading...</span>
+        <div class="slds-spinner__dot-a"></div>
+        <div class="slds-spinner__dot-b"></div>
+      </div>
+    </div>
+  </aura:if>
+  <input id="theHiddenInput" type="text" name="theHiddenInput" style="display: none" />
+  <div id="spinnerId" class="slds-spinner_container" style="position: fixed; display: none">
+    <div class="slds-spinner--brand slds-spinner slds-spinner--large slds-is-fixed" role="alert">
+      <span class="slds-assistive-text">Loading...</span>
+      <div class="slds-spinner__dot-a"></div>
+      <div class="slds-spinner__dot-b"></div>
+    </div>
+  </div>
+
+  <div class="report-container">
+    <div class="main-container reportChart">
+      <!-- <div style="padding-bottom: 20px;">
+                <div class="down-bar down-bar-content slds-grid">
+                    <div class="slds-col" style="display: flex; gap: 10px">
+                        <div class="black-topbar-logo">
+                            <img src="{!$Resource.SentinelOneColorImage}" class="SentinelOne" />
+                        </div>
+                    </div>
+                </div>
+            </div> -->
+      <div class="containerPart">
+        <div class="firstPart">
+          <div class="header-section">
+            <div class="slds-grid">
+              <div class="slds-col slds-grid_vertical slds-size_2-of-4 logo">
+                <div style="display: flex; gap: 8px">
+                  <img src="{!$Resource.threatreportlogo}" />
+                  <div class="slds-col header">Threat Report</div>
+                </div>
+                <div style="margin-left: 53px">
+                  <aura:if isTrue="{!v.selectDate}">
+                    <lightning:select
+                      name="select1"
+                      aura:id="selectScope"
+                      variant="label-hidden"
+                      value="{!v.selectedDate}"
+                      class="Inputcustomer"
+                      onchange="{!c.dateChange}"
+                    >
+                      <aura:iteration items="{!v.datesList}" var="l">
+                        <option selected="{!v.reportId == l.key}" value="{!l.key}" text="{!l.value}"></option>
+                      </aura:iteration>
+                    </lightning:select>
+                    <aura:set attribute="else">
+                      <div class="slds-col body-fonts d-center">
+                        {!v.reportDate} &nbsp;
+                        <aura:if isTrue="{!v.hasMultipleRecord}">
+                          <img
+                            style="padding-left: 5px"
+                            src="{!$Resource.Down_Arrow}"
+                            onclick="{!c.openDropDownForDate}"
+                          />
+                        </aura:if>
+                      </div>
+                    </aura:set>
+                  </aura:if>
+                </div>
+              </div>
+              <div class="slds-col slds-size_2-of-4">
+                <div class="btn-group">
+                  <div class="share-btn btn-fonts icon-btn" onclick="{!c.forward}">
+                    <!-- <div>
+                                        <img src="{!$Resource.share_icon}" />
+                                    </div>-->
+                    <div>
+                      <span>Share</span>
+                    </div>
+                  </div>
+                  <div class="download-pdf-btn btn-fonts icon-btn" onclick="{!c.fireevent}">
+                    <div>
+                      <img src="{!$Resource.download_icon}" />
+                    </div>
+                    <div>
+                      <span>Download as PDF</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div class="acc-detail-container">
+              <div class="detail-section side-border">
+                <div class="Caption2">Account Name</div>
+                <aura:if isTrue="{!v.selectCustName}">
+                  <lightning:select
+                    name="select1"
+                    variant="label-hidden"
+                    value="{!v.reportId}"
+                    class="Inputcustomer"
+                    onchange="{!c.reportChange}"
+                  >
+                    <aura:iteration items="{!v.customersList}" var="l">
+                      <option selected="{!v.reportId == l.key}" value="{!l.key}" text="{!l.value}"></option>
+                    </aura:iteration>
+                  </lightning:select>
+                  <aura:set attribute="else">
+                    <div class="Subtitle1 d-center">
+                      {!v.headerDetail.Account_Name} &nbsp;
+                      <aura:if isTrue="{!v.hasMultipleRecord}">
+                        <img style="padding-left: 5px" src="{!$Resource.Down_Arrow}" onclick="{!c.openDropDown}" />
+                      </aura:if>
+                    </div>
+                  </aura:set>
+                </aura:if>
+              </div>
+              <div class="detail-section side-border">
+                <div class="Caption2">Support Level</div>
+                <div class="Subtitle1">{!v.headerDetail.Support_Level}</div>
+              </div>
+              <div class="detail-section side-border">
+                <div class="Caption2">Sites</div>
+                <div class="Subtitle1">{!v.headerDetail.Number_of_Sites}</div>
+              </div>
+              <div class="detail-section side-border">
+                <div class="Caption2">Groups</div>
+                <div class="Subtitle1">{!v.headerDetail.Number_of_Groups}</div>
+              </div>
+              <div class="detail-section side-border">
+                <div class="Caption2">EP Agents</div>
+                <div class="Subtitle1">{!v.headerDetail.Number_ep_agents}</div>
+              </div>
+            </div>
+          </div>
+          <div class="section section-overview">
+            <div class="section-title">Overview</div>
+            <div class="sub-section overview-sub-section1">
+              <div class="sub-section-content side-border">
+                <div class="Caption2">Threats</div>
+                <div class="headLine3">{!v.overview.threats}</div>
+              </div>
+              <div class="sub-section-content side-border">
+                <div class="Caption2">Detected</div>
+                <div class="headLine3">{!v.overview.detect}</div>
+              </div>
+              <div class="sub-section-content side-border">
+                <div class="Caption2">Protected</div>
+                <div class="headLine3">{!v.overview.protect}</div>
+              </div>
+              <div class="sub-section-content side-border">
+                <div class="Caption2">Unresolved Threats</div>
+                <div class="headLine3">{!v.overview.unresolved}%</div>
+              </div>
+              <aura:if isTrue="{!not(empty(v.overview.response_time))}">
+                <div class="sub-section-content side-border">
+                  <div class="Caption2">Mean TimeTo Response</div>
+                  <div class="headLine3">{!v.overview.response_time}</div>
+                </div>
+              </aura:if>
+              <div class="sub-section-content side-border">
+                <div class="Caption2">Response Coverage</div>
+                <div class="headLine3">{!v.overview.response_coverage}%</div>
+              </div>
+            </div>
+            <div id="threatTrendDiv" class="sub-section overview-sub-section2">
+              <div class="sub-section-title">THREAT TRENDS</div>
+              <div style="margin-top: 16px; display: flex">
+                <div
+                  id="threatTrendPieDiv"
+                  class="agent-by-os-content side-border"
+                  style="padding-right: 16px; width: 30%"
+                >
+                  <div
+                    id="threatTrendpie"
+                    name="threatTrendpie"
+                    aura:id="threatTrendpie"
+                    style="width: 100%; height: 198px"
+                  ></div>
+                </div>
+                <div id="threatTrendLineDiv" class="agent-by-os-content" style="padding-left: 16px; width: 70%">
+                  <div
+                    aura:id="threatTrendLine"
+                    name="threatTrendLine"
+                    id="threatTrendLine"
+                    style="width: 100%; height: 198px"
+                  ></div>
+                </div>
+              </div>
+            </div>
+            <div id="engineTpFpDiv" class="sub-section overview-sub-section2">
+              <div class="sub-section-title">Engines vs TP / FP</div>
+              <div
+                aura:id="engineVsTpFpChartContainer"
+                name="engineVsTpFpChartContainer"
+                id="engineVsTpFpChartContainer"
+                style="margin-top: 16px; width: 100%"
+              >
+                <!-- CHART -->
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="secondPart">
+          <div id="dtPtId" style="display: flex; gap: 16px">
+            <div id="enginePDDiv" class="sub-section overview-sub-section2" style="width: calc(50% - 8px)">
+              <div class="sub-section-title">Engines vs Detected, Protected</div>
+              <div
+                aura:id="enginevsProtectDetectChart"
+                name="enginevsProtectDetectChart"
+                id="enginevsProtectDetectChart"
+                style="margin-top: 16px; width: 100%"
+              ></div>
+            </div>
+            <div id="threatPDDiv" class="sub-section overview-sub-section2" style="width: calc(50% - 8px)">
+              <div class="sub-section-title">Threats Type vs Detected, Protected</div>
+              <div
+                aura:id="threatVsDetectChart"
+                name="threatVsDetectChart"
+                id="threatVsDetectChart"
+                style="margin-top: 16px; width: 100%"
+              ></div>
+            </div>
+          </div>
+          <div class="section upgrades">
+            <div class="section-title">Threat Analysis</div>
+            <div id="SiteAndAgentDiv" style="display: flex; gap: 16px; width: 100%">
+              <div id="topSiteDiv" class="sub-section overview-sub-section2" style="width: calc(50% - 8px)">
+                <div class="sub-section-title">Top Sites</div>
+                <div aura:id="topSitesChart" name="topSitesChart" id="topSitesChart" style="">
+                  <!-- chart -->
+                </div>
+              </div>
+              <div id="topAgentDiv" class="sub-section overview-sub-section2" style="width: calc(50% - 8px)">
+                <div class="sub-section-title">Top Agents</div>
+                <div aura:id="topAgentChart" name="topAgentChart" id="topAgentChart"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="thirdPart">
+          <div id="hashAndApplicationDiv" style="display: flex; gap: 16px; width: 100%; max-height: 500px">
+            <div id="hashDiv" class="sub-section overview-sub-section2" style="width: calc(50% - 8px)">
+              <div class="sub-section-title">Top Hashes</div>
+              <div aura:id="topHashChart" name="topHashChart" id="topHashChart" style="width: 100%">
+                <!-- chart -->
+              </div>
+            </div>
+            <div id="appDiv" class="sub-section overview-sub-section2" style="width: calc(50% - 8px)">
+              <div class="sub-section-title">Top Applications</div>
+              <div
+                aura:id="topApplicationChart"
+                name="topApplicationChart"
+                id="topApplicationChart"
+                style="width: 100%"
+              >
+                <!-- chart -->
+              </div>
+            </div>
+          </div>
+          <div
+            id="noisyHashDiv"
+            class="sub-section overview-sub-section2"
+            style="width: 100% !important; height: 422px !important"
+          >
+            <div class="slds-grid" style="position: relative">
+              <div class="slds-col slds-size_2-of-3 sub-section-title">
+                Top Hashes and Top Applications &nbsp; &nbsp;
+                <lightning:icon
+                  iconName="utility:info_alt"
+                  alternativeText="info_alt"
+                  size="x-small"
+                  title="The heatmap visualizes the top noisy hashes frequency of occurrence on a daily basis for multiple unique agents. The view is sorted so that hashes with the most occurrences will appear on top and those with lower frequencies at the bottom."
+                ></lightning:icon>
+              </div>
+              <div
+                class="slds-col slds-size_1-of-3 toggle-btn body-fonts show_only"
+                style="float: right; padding-right: 16px"
+              >
+                <div style="float: right !important">
+                  <lightning:input
+                    type="toggle"
+                    name="toggleButton"
+                    aura:id="tglbtn"
+                    label="Show Only TP"
+                    messageToggleActive=""
+                    messageToggleInactive=""
+                    onchange="{!c.getToggleButtonValue}"
+                  />
+                </div>
+              </div>
+            </div>
+            <div id="topNoisyHashChart" aura:id="topNoisyHashChart" name="topNoisyHashChart" style="width: 100%">
+              <!-- CHART -->
+            </div>
+            <div id="topNoisyChart1" aura:id="topNoisyChart1" name="topNoisyChart1">
+              <!-- CHART -->
+            </div>
+          </div>
+        </div>
+        <div class="fourthPart">
+          <div class="section recomanded-actions">
+            <div class="section-title">Exclusions - Not Recommended</div>
+            <div class="serach-share-section" style="margin-top: 38px; margin-bottom: 24px; display: flex">
+              <aura:if isTrue="{!v.notRecommendation.total_not_recommended > 10}">
+                <div class="recomandation-title">
+                  {!v.notRecommendation.total_not_recommended} Not Recommended Exclusions (Showing first 10)
+                </div>
+                <aura:set attribute="else">
+                  <div class="recomandation-title">
+                    {!v.notRecommendation.total_not_recommended} Not Recommended Exclusions
+                  </div>
+                </aura:set>
+              </aura:if>
+              <div class="search-btn-combo">
+                <div class="search-btn-container icon-btn">
+                  <div>
+                    <img src="{!$Resource.search_icon}" />
+                  </div>
+                  <div class="place-holder">
+                    <lightning:input
+                      name="search-input"
+                      label=""
+                      variant="label-hidden"
+                      placeholder="Search"
+                      class="search-input"
+                      value="{!v.value}"
+                      onkeyup="{!c.searchNotRecomendation}"
+                    />
+                  </div>
+                </div>
+                <div class="share-btn btn-fonts icon-btn share-btn-custom" onclick="{!c.NotRecommendedDownloadCSV}">
+                  <div>
+                    <img src="{!$Resource.download_csv_icon}" />
+                  </div>
+                  <div>
+                    <span>Download As CSV</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div>
+              <aura:if isTrue="{!v.notRecommendation.total_not_recommended_list.length > 0}">
+                <div class="table-title-nrlist">
+                  <div class="Caption1 Caption2 column1">Reporter</div>
+                  <div class="Caption2 column2">Description</div>
+                  <div class="Caption3 Caption2 column3">Date Created</div>
+                </div>
+                <div class="table-data-container-nrlist">
+                  <aura:iteration items="{!v.notRecommendation.total_not_recommended_list}" var="nr">
+                    <div class="ticket-list-item">
+                      <div class="body-fonts nrlist_column1">{!nr.reporter}</div>
+                      <div class="body-fonts nrlist_column2">{!nr.description}</div>
+                      <div class="body-fonts nrlist_column3">{!nr.createdDate}</div>
+                    </div>
+                  </aura:iteration>
+                </div>
+                <aura:set attribute="else">
+                  <span class="recomandation-title"> No Records available.</span>
+                </aura:set>
+              </aura:if>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <aura:if isTrue="{!v.shareReport}">
+      <section
+        role="dialog"
+        tabindex="-1"
+        aria-modal="true"
+        aria-labelledby="modal-heading-01"
+        class="slds-modal slds-fade-in-open"
+      >
+        <div id="email" class="slds-modal__container">
+          <!--modal-->
+          <div class="modal-content">
+            <div class="slds-modal__header impactCheckModal">
+              <h1 id="modal-heading-01" class="slds-modal__title slds-hyphenate">Forward as Mail</h1>
+            </div>
+            <div class="slds-modal__content slds-p-around_medium" id="modal-content-id-2">
+              <h1 style="color: red; font-size: 20px; display: none" id="emailErrorMessage">
+                Enter all required fiels
+              </h1>
+              <lightning:input type="email" label="To" name="To" value="{!v.mailTo}" multiple="true" required="true" />
+              <lightning:input type="email" label="Cc" name="Cc" value="{!v.mailCc}" multiple="true" />
+              <lightning:input type="email" label="Bcc" name="Bcc" value="{!v.mailBcc}" multiple="true" />
+              <lightning:input type="text" label="Subject" name="Subject" value="{!v.mailSubject}" required="true" />
+              <br />
+              <lightning:inputRichText value="{!v.mailBody}" label="Body" labelVisible="true" />
+
+              <div>
+                <table>
+                  <tr>
+                    <td style="vertical-align: middle; text-align: end; cursor: pointer">
+                      <lightning:icon
+                        iconName="utility:clear"
+                        variant="brand"
+                        alternativeText="Close"
+                        onclick="{!c.closeEmail}"
+                      />&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+                      <lightning:icon
+                        iconName="utility:send"
+                        variant="container"
+                        alternativeText="Send"
+                        onclick="{!c.send}"
+                      />
+                    </td>
+                  </tr>
+                </table>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+      <div class="slds-backdrop slds-backdrop_open" role="presentation"></div>
+    </aura:if>
+  </div>
+</aura:component>

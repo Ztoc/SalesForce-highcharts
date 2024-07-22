@@ -1,0 +1,895 @@
+import { LightningElement, wire, track } from 'lwc';
+import getPayOffPaydownRequestGraphData from '@salesforce/apex/HomePageController.getPayOffPaydownRequestGraphData';
+import HOME_PAGE_STATIC_RESOURCES from '@salesforce/resourceUrl/HomePageAllResources';  
+import { loadScript } from 'lightning/platformResourceLoader';
+
+const TABLE_COLUMNS1 = [
+    { label: 'Name', fieldName: 'recordIdUrl', type: 'url', typeAttributes: { label: { fieldName: 'recordIdName' }, target: '_blank' }  , sortable: true},
+    { label: 'Method Of Request', fieldName: 'Method_of_Request__c', type: 'text',  sortable: true},
+    { label: 'Payoff/Paydown Letter Request: Created Date', fieldName: 'CreatedDate',type: 'date',typeAttributes: {
+        day: "numeric",
+        month: "numeric",
+        year: "numeric",
+        timeZone: "UTC"
+    }, sortable: true },
+    { label: 'Type Of Request', fieldName: 'Type_of_Request__c', type: 'text',sortable: true },
+    { label: 'Loan Number', fieldName: 'Loan_Number__c', type: 'text',sortable: true},
+    { label: 'Internal Requestor', fieldName: 'InternalRequestorUrl',type: 'url', typeAttributes: { label: { fieldName: 'InternalRequestorName' }, target: '_blank' }  , sortable: true},
+    { label: 'Guarantor 1', fieldName: 'Guarantor1url', type: 'url', typeAttributes: { label: { fieldName: 'Guarantor1Name' }, target: '_blank' }  , sortable: true},
+    { label: 'Loan Officer', fieldName: 'Loan_Officer__c', type: 'text',sortable: true},
+    { label: 'Product  Category', fieldName: 'Product_Category__c', type: 'text',sortable: true},
+];
+
+
+export default class PayoffPaydownComponent extends LightningElement {
+    payOffLettersInProgress = 0;
+    @track payOffLettersInProgressDoriList = [];
+    @track payOffLettersInProgressPortalList = [];
+    @track payOffLettersInProgressWebsiteList = [];
+    payOffLettersInProgressServicing = 0;
+    payOffLettersInProgressServicingDoriList = [];
+    payOffLettersInProgressServicingPortalList  = [];
+    payOffLettersInProgressServicingWebsiteList  = [];
+
+    payOffLettersCompletedThisMonth = 0;
+    payOffLettersCompletedThisMonthDoriList = [];
+    payOffLettersCompletedThisMonthPortalList = [];
+    payOffLettersCompletedThisMonthWebsiteList = [];
+
+    payOffLettersCompletedThisYear = 0;
+    payOffCompletedYearDoriList = [];
+    payOffCompletedYearPortalList = [];
+    payOffCompletedYearWebsiteList = [];
+
+    payOffLettersInProgressList = [];
+    payOffInProgressServicingList = [];
+    payOffCompletedThisMonthList = [];
+    payOffCompletedThisYearList = [];
+
+    highchartsInitialized = false;
+    dataLoaded = false;
+    scriptLoaded = false;
+    isTeamDataClicked = false;
+    processing = false;
+    isDataPresent = false;
+
+    popupName = '';
+    popupDataList = [];
+    popDataCount = 0;
+    highcharts = HOME_PAGE_STATIC_RESOURCES+'/'+'Highcharts.js';
+    chart;
+    chart1;
+    chart2;
+    chart3;
+    tableColumns = TABLE_COLUMNS1;
+    @track sortedBy;
+    @track sortedDirection;
+    creditRequest = 'Request';
+    servicingRequest = 'Request';
+    monthRequest = 'Request';
+    yearRequest  = 'Request';
+    renderedCallback() {
+        if (this.highchartsInitialized) {
+            return;
+        }
+
+        this.highchartsInitialized = true;
+
+        loadScript(this, this.highcharts)
+        .then(() => {
+            this.scriptLoaded = true;  
+        })
+        .catch(error => {
+            console.error('Error loading Highcharts or fetching data: ', error);
+        });
+    }
+
+    handleSort(event) {
+        this.sortedBy = event.detail.fieldName;
+        this.sortedDirection = event.detail.sortDirection;
+        this.sortData(this.sortedBy, this.sortedDirection);
+    }
+
+    sortData(fieldname, direction) {
+    // Perform sorting logic on your data array based on the selected column and direction
+    // Replace this with your actual sorting implementation
+        let parseData = JSON.parse(JSON.stringify(this.popupDataList));
+        // Return the value stored in the field
+        let keyValue = (a) => {
+            return a[fieldname];
+        };
+        // cheking reverse direction
+        let isReverse = direction === 'asc' ? 1: -1;
+        // sorting data
+        parseData.sort((x, y) => {
+            x = keyValue(x) ? keyValue(x) : ''; // handling null values
+            y = keyValue(y) ? keyValue(y) : '';
+            // sorting values based on direction
+            return isReverse * ((x > y) - (y > x));
+        });
+        this.popupDataList = parseData;
+    }
+
+    runHighcharts1(payOffInProgressMethodDori,payOffInProgressMethodPortal,payOffInProgressMethodWebsite, maxValues){
+
+        const containers1 = this.template.querySelectorAll('.container-class1');
+        containers1.forEach(container1 => {
+            let myListString = [
+                { name: 'Internal Dori Request', y: payOffInProgressMethodDori, type:'progress'},
+                { name: 'Customer Portal', y: payOffInProgressMethodPortal,  type:'progress'},
+                { name: 'Website', y:payOffInProgressMethodWebsite, type:'progress'},
+            ];
+            const colors = ['#3FA2CD','#1D3F777','#5CC971','#5CC971', '#1D3F777'];
+            this.chart = Highcharts.chart(container1, {
+                chart: {
+                    plotBackgroundColor: null,
+                    plotBorderWidth: null,
+                    plotShadow: false,
+                    type: 'pie',
+                    height:'210px',
+                    slicedOffset: 0,
+                    spacingBottom:0,
+                    spacingTop:0,
+                    spacingRight:0,
+                    spacingLeft:0,
+                },
+                 credits: {
+                    enabled:false
+                },
+                title: {
+                    text: '',
+                    align: 'left'
+                },
+                legend: {
+                    enabled: true,
+                    align: 'left',
+                    layout: 'horizontal',
+                    verticalAlign: 'bottom',
+                    x: 0, // Adjust horizontal position
+                    y: 2, 
+                    marginBottom:4,
+                    marginTop: 4,
+                    itemMarginTop: 0.5,
+                    itemMarginBottom: -1,
+                    symbolHeight: 10,
+                    symbolWidth: 10,
+                    symbolRadius: 5,
+                    itemStyle: {
+                        fontSize: '9px',
+                        fontWeight: 'bold',
+                        whiteSpace: 'normal', // Allow wrapping
+                        width: '100px'  // Further reduce font size
+                    },
+                    useHTML: true,
+                    labelFormatter: function() {
+                        return `<span style="color:${this.color};">${this.name}</span>`;
+                    }
+                },
+                tooltip: {
+                    useHTML: true,
+                    enabled: true,
+                    formatter: function () {
+                        if (!this.point.name.includes('Week')) {
+                            return `<span style="opacity: 1; color:white;"><b>${this.point.name}</b><br/> ${this.point.y} Loans</span>`;
+                        } else {
+                            return `<span style="opacity: 1; color:white;"><b>${this.point.name}</b></span>`;
+                        }
+                    },
+                    headerFormat: '',
+                    backgroundColor: 'rgba(29, 63, 119, 1)', 
+                },
+                accessibility: {
+                    point: {
+                        valueSuffix: '%'
+                    }
+                },
+                plotOptions: {
+                    pie: {
+                        // size:150,
+                        size: '100%',
+                        center: ['50%', '45%'],
+                        allowPointSelect: true,
+                        cursor: 'pointer',
+                        dataLabels: {
+                            enabled: true,
+                            format: '{point.y:.0f}',
+                            distance: -30, // Adjust the distance of labels from center
+                            style: {
+                                fontWeight: 'bold',
+                                fontSize: '9px',
+                                color: 'black',
+                                textOutline: 'none'
+                            }
+                        },
+                        events: {
+                            click: function(event) {
+                                let point = {}; 
+                                point.name = event.point.name;
+                                point.type = event.point.type;
+                                this.openPopupForGraph(point);
+                                setTimeout(() => {
+                                    event.point.select(false, false);
+                                }, 3000); 
+                            }.bind(this)
+                        } 
+                    }
+                },
+              
+                series: [{
+                    name: '',
+                    colorByPoint: true,
+                    showInLegend: true,
+                    data:  [{
+                        name: 'Website',
+                        sliced: false,
+                        y: payOffInProgressMethodWebsite,
+                        color:"#FFA135",
+                        type:'progress'
+                    },
+                    {
+                        name: 'Customer Portal',
+                        sliced: false,
+                        y: payOffInProgressMethodPortal,
+                        color:"#D3D3D3",
+                        type:'progress'
+                    },
+                    {
+                        name: 'Internal Dori Request',
+                        y: payOffInProgressMethodDori,
+                        color: "#3FA2CD",
+                        sliced: false,
+                        selected: true,
+                        type:'progress'
+                    }],
+                }]
+            });
+    
+          
+        })
+    }
+
+    runHighcharts2(payOffInServicingMethodDori,payOffInServicingMethodPortal,payOffInServicingMethodWebsite, maxValues) {
+
+        const containers1 = this.template.querySelectorAll('.container-class2');
+        containers1.forEach(container1 => {
+            let myListString = [
+                { name: 'Website', y: payOffInServicingMethodWebsite, tpye:'servicing'  },
+                { name: 'Customer Portal', y: payOffInServicingMethodPortal, tpye:'servicing'  },
+                { name: 'Internal Dori Request', y: payOffInServicingMethodDori, tpye:'servicing'},
+            ];
+            const colors = ['#FFA135','#D3D3D3','#3FA2CD','#5CC971', '#1D3F777'];
+            this.chart1 = Highcharts.chart(container1, {
+                chart: {
+                    plotBackgroundColor: null,
+                    plotBorderWidth: null,
+                    plotShadow: false,
+                    type: 'pie',
+                    height:'210px',
+                     slicedOffset: 0,
+                    spacingBottom:0,
+                    spacingTop:0,
+                    spacingRight:0,
+                    spacingLeft:0,
+                },
+                 credits: {
+                    enabled:false
+                },
+                title: {
+                    text: '',
+                    align: 'left'
+                },
+                accessibility: {
+                    point: {
+                        valueSuffix: '%'
+                    }
+                },
+                plotOptions: {
+                    pie: {
+                        size:"100%",
+                        center: ['50%', '45%'],
+                        allowPointSelect: true,
+                        cursor: 'pointer',
+                        dataLabels: {
+                            enabled: true,
+                            format: '{point.y:.0f}',
+                            distance: -30, // Adjust the distance of labels from center
+                            style: {
+                                fontWeight: 'bold',
+                                fontSize: '10px',
+                                color: 'black',
+                                textOutline: 'none'
+                            }
+                        },
+                        events: {
+                            click: function(event) {
+                                let point = {}; 
+                                point.name = event.point.name;
+                                point.type = event.point.type;
+                                this.openPopupForGraph(point);
+                                setTimeout(() => {
+                                    event.point.select(false, false);
+                                }, 3000); 
+                            }.bind(this)
+                        } 
+                    }
+                },
+                legend: {
+                    enabled: true,
+                    align: 'left',
+                    layout: 'horizontal',
+                    verticalAlign: 'bottom',
+                    x: 0, // Adjust horizontal position
+                    y: 2, 
+                    marginBottom:4,
+                    marginTop: 4,
+                    itemMarginTop: 0.5,
+                    itemMarginBottom: -1,
+                    symbolHeight: 10,
+                    symbolWidth: 10,
+                    symbolRadius: 5,
+                    itemStyle: {
+                        fontSize: '9px',
+                        fontWeight: 'bold',
+                        whiteSpace: 'normal', // Allow wrapping
+                        width: '100px'  // Further reduce font size
+                    },
+                    useHTML: true,
+                    labelFormatter: function() {
+                        return `<span style="color:${this.color};">${this.name}</span>`;
+                    }
+                },
+                tooltip: {
+                    useHTML: true,
+                    enabled: true,
+                    formatter: function () {
+                        if (!this.point.name.includes('Week')) {
+                            return `<span style="opacity: 1; color:white;"><b>${this.point.name}</b><br/> ${this.point.y} Loans</span>`;
+                        } else {
+                            return `<span style="opacity: 1; color:white;"><b>${this.point.name}</b></span>`;
+                        }
+                    },
+                    headerFormat: '',
+                    backgroundColor: 'rgba(29, 63, 119, 1)', 
+                },
+              
+                series: [{
+                    name: '',
+                    data: myListString.map((item, index) => {
+                        return { 
+                            name: item.name,
+                            y: item.y,
+                            color: colors[index],
+                            type:"servicing"
+                        };
+                    }),
+                    showInLegend: true 
+                }]
+            });
+    
+            window.addEventListener('resize', () => {
+                let width = container1.offsetWidth;
+                this.chart1.setSize(width, null);
+            });  
+        })
+    }
+
+    runHighcharts3(payOffCompletedMonthDori,payOffCompletedMonthPortal,payOffCompletedMonthWebsite, maxValues) {
+
+        const containers1 = this.template.querySelectorAll('.container-class3');
+        containers1.forEach(container1 => {
+            let myListString = [
+                { name: 'Website', y: payOffCompletedMonthWebsite, type:'completedMonth' },
+                { name: 'Customer Portal', y: payOffCompletedMonthPortal, type:'completedMonth' },
+                { name: 'Internal Dori Request', y: payOffCompletedMonthDori, type:'completedMonth' },
+            ]; 
+    
+            const colors = ['#FFA135','#D3D3D3','#3FA2CD','#5CC971', '#1D3F777'];
+            this.chart2 = Highcharts.chart(container1, {
+                chart: {
+                    plotBackgroundColor: null,
+                    plotBorderWidth: null,
+                    plotShadow: false,
+                    type: 'pie',
+                    height:'210px',
+                    slicedOffset: 0,
+                    spacingBottom:0,
+                    spacingTop:0,
+                    spacingRight:0,
+                    spacingLeft:0,
+                },
+                 credits: {
+                    enabled:false
+                },
+                title: {
+                    text: '',
+                    align: 'left'
+                },
+             
+                legend: {
+                  enabled: true,
+                    align: 'left',
+                    layout: 'horizontal',
+                    verticalAlign: 'bottom',
+                    x: 0, // Adjust horizontal position
+                    y: 2, 
+                    marginBottom:4,
+                    marginTop: 4,
+                    itemMarginTop: 0.5,
+                    itemMarginBottom: -1,
+                    symbolHeight: 10,
+                    symbolWidth: 10,
+                    symbolRadius: 5,
+                    itemStyle: {
+                        fontSize: '9px',
+                        fontWeight: 'bold',
+                        whiteSpace: 'normal', // Allow wrapping
+                        width: '100px'  // Further reduce font size
+                    },
+                    useHTML: true,
+                    labelFormatter: function() {
+                        return `<span style="color:${this.color};">${this.name}</span>`;
+                    }
+                },
+                tooltip: {
+                    useHTML: true,
+                    enabled: true,
+                    formatter: function () {
+                        if (!this.point.name.includes('Week')) {
+                            return `<span style="opacity: 1; color:white;"><b>${this.point.name}</b><br/> ${this.point.y} Loans</span>`;
+                        } else {
+                            return `<span style="opacity: 1; color:white;"><b>${this.point.name}</b></span>`;
+                        }
+                    },
+                    headerFormat: '',
+                    backgroundColor: 'rgba(29, 63, 119, 1)', 
+                },
+                accessibility: {
+                    point: {
+                        valueSuffix: '%'
+                    }
+                },
+                plotOptions: {
+                    pie: {
+                         size: '100%',
+                        center: ['50%', '45%'],
+                        allowPointSelect: true,
+                        cursor: 'pointer',
+                        dataLabels: {
+                            enabled: true,
+                            format: '{point.y:.0f}',
+                            distance: -30, // Adjust the distance of labels from center
+                            style: {
+                                fontWeight: 'bold',
+                                fontSize: '8px',
+                                color: 'black',
+                                textOutline: 'none'
+                            }
+                        },
+                        events: {
+                            click: function(event) {
+                                let point = {}; 
+                                point.name = event.point.name;
+                                point.type = event.point.type;
+                                this.openPopupForGraph(point);
+                                setTimeout(() => {
+                                    event.point.select(false, false);
+                                }, 3000); 
+                            }.bind(this)
+                        } 
+                    }
+                },
+                series: [{
+                    name: '',
+                    data: myListString.map((item, index) => {
+                        return {
+                            
+                            name: item.name,
+                            y: item.y,
+                            color: colors[index],
+                            type: 'completedMonth' 
+                        };
+                    }),
+                    showInLegend: true 
+                }]
+            });
+    
+            window.addEventListener('resize', () => {
+                let width = container1.offsetWidth;
+                this.chart2.setSize(width, null);
+            });  
+        })
+    }
+
+    runHighcharts4(payOffCompletedMYearDori,payOffCompletedYearPortal,payOffCompletedYearWebsite, maxValues) {
+
+        const containers1 = this.template.querySelectorAll('.container-class4');
+        containers1.forEach(container1 => {
+            let myListString = [
+                { name: 'Website', y: payOffCompletedYearWebsite, type:'completedYear' },
+                { name: 'Customer Portal', y: payOffCompletedYearPortal, type:'completedYear' },
+                { name: 'Internal Dori Request', y: payOffCompletedMYearDori, type:'completedYear' },
+            ];
+            const colors = ['#FFA135','#D3D3D3','#3FA2CD','#5CC971', '#1D3F777'];
+            this.chart3 = Highcharts.chart(container1, {
+                chart: {
+                    plotBackgroundColor: null,
+                    plotBorderWidth: null,
+                    plotShadow: false,
+                    type: 'pie',
+                    height:'210px',
+                    slicedOffset: 0,
+                    spacingBottom:0,
+                    spacingTop:0,
+                    spacingRight:0,
+                    spacingLeft:0,
+                },
+                 credits: {
+                    enabled:false
+                },
+                title: {
+                    text: '',
+                    align: 'left'
+                },
+                legend: {
+                   enabled: true,
+                    align: 'left',
+                    layout: 'horizontal',
+                    verticalAlign: 'bottom',
+                    x: 0, // Adjust horizontal position
+                    y: 2, 
+                    marginBottom:4,
+                    marginTop: 4,
+                    itemMarginTop: 0.5,
+                    itemMarginBottom: -1,
+                    symbolHeight: 10,
+                    symbolWidth: 10,
+                    symbolRadius: 5,
+                    itemStyle: {
+                        fontSize: '9px',
+                        fontWeight: 'bold',
+                        whiteSpace: 'normal', // Allow wrapping
+                        width: '100px'  // Further reduce font size
+                    },
+                    useHTML: true,
+                    labelFormatter: function() {
+                        return `<span style="color:${this.color};">${this.name}</span>`;
+                    }
+                },
+                tooltip: {
+                    useHTML: true,
+                    enabled: true,
+                    formatter: function () {
+                        if (!this.point.name.includes('Week')) {
+                            return `<span style="opacity: 1; color:white;"><b>${this.point.name}</b><br/> ${this.point.y} Loans</span>`;
+                        } else {
+                            return `<span style="opacity: 1; color:white;"><b>${this.point.name}</b></span>`;
+                        }
+                    },
+                    headerFormat: '',
+                    backgroundColor: 'rgba(29, 63, 119, 1)', 
+                },
+                accessibility: {
+                    point: {
+                        valueSuffix: '%'
+                    }
+                },
+                plotOptions: {
+                    pie: {
+                       size: '100%',
+                        center: ['50%', '45%'],
+                        allowPointSelect: true,
+                        cursor: 'pointer',
+                        dataLabels: {
+                            enabled: true,
+                            format: '{point.y:.0f}',
+                            distance: -30, // Adjust the distance of labels from center
+                            style: {
+                                fontWeight: 'bold',
+                                fontSize: '8px',
+                                color: 'black',
+                                textOutline: 'none'
+                            }
+                        },
+                        events: {
+                            click: function(event) {
+                                let point = {}; 
+                                point.name = event.point.name;
+                                point.type = event.point.type;
+                                this.openPopupForGraph(point);
+                                setTimeout(() => {
+                                    event.point.select(false, false);
+                                }, 3000); 
+                            }.bind(this)
+                        } 
+                    }
+                },
+                series: [{
+                    name: '',
+                    colorByPoint: true,
+                    showInLegend: true,
+                    data: myListString.map((item, index) => {
+                        return {
+                            name: item.name,
+                            y: item.y,
+                            color: colors[index],
+                            type:'completedYear'
+                        };
+                    }),
+                    showInLegend: true 
+                }]
+            });
+    
+            window.addEventListener('resize', () => {
+                let width = container1.offsetWidth;
+                this.chart3.setSize(width, null);
+            });  
+        })
+    }
+
+    @wire(getPayOffPaydownRequestGraphData)
+    wiredGraphData({ error, data }) {
+        if (data) {
+            this.processData(data);
+            this.dataLoaded = true;
+        }
+    }
+    
+    processData(data) {
+        let payOffLettersInProgress = 0;
+        let payOffLettersInProgressList = [];
+        let payOffInProgressMethodDori = 0;
+        let payOffInProgressMethodDoriArray = [];
+        let payOffInProgressMethodPortal = 0;
+        let payOffInProgressMethodPortalArray = [];
+        let payOffInProgressMethodWebsite = 0;
+        let payOffInProgressMethodWebsiteArray = [];
+        let payOffInProgressServicing = 0;
+        let payOffInProgressServicingList = [];
+        let payOffInServicingMethodDori = 0;
+        let payOffInServicingMethodDoriArray = [];
+        let payOffInServicingMethodPortal = 0;
+        let payOffInServicingMethodPortalArray =[];
+        let payOffInServicingMethodWebsite = 0;
+        let payOffInServicingMethodWebsiteArray = [];
+        let payOffCompletedThisMonth = 0;
+        let payOffCompletedThisMonthList = [];
+        let payOffCompletedMonthDori = 0;
+        let payOffCompletedMonthDoriArray = [];
+        let payOffCompletedMonthPortal = 0;
+        let payOffCompletedMonthPortalArray = [];
+        let payOffCompletedMonthWebsite = 0;
+        let payOffCompletedMonthWebsiteArray = [];
+        let payOffCompletedThisYear = 0;
+        let payOffCompletedThisYearList = [];
+        let payOffCompletedYearDori = 0;
+        let payOfCompletedYearDori = [];
+        let payOffCompletedYearPortal = 0;
+        let payOffCompletedYearPortalArray = [];
+        let payOffCompletedYearWebsite = 0;
+        let payOffCompletedYearWebsiteArray= [];
+
+        data.forEach(res=>{
+            const createdDate =  new Date(res.CreatedDate);
+            const createdDateMonth = createdDate.getUTCMonth() + 1;
+            const currentDate = new Date();
+            const currentMonth = currentDate.getUTCMonth() + 1;
+            if((res.Product_Category__c == 'Bridge' && res.Type_of_Request__c === 'Paydown of Loan' && res.Payoff_Paydown_Cancelled__c == false) && (res.Credit_Approved__c == false || res.Credit_Committee_Member_Approved__c == false)) {
+                payOffLettersInProgress++;
+                payOffLettersInProgressList.push(res);
+                if(((res.Product_Category__c == 'Bridge' && res.Type_of_Request__c === 'Paydown of Loan' && res.Payoff_Paydown_Cancelled__c == false) && (res.Credit_Approved__c == false || res.Credit_Committee_Member_Approved__c == false)) && res.Method_of_Request__c === 'Internal DORI Request') {
+                    payOffInProgressMethodDori++;
+                    payOffInProgressMethodDoriArray.push(res);
+                }
+                if(((res.Product_Category__c == 'Bridge' && res.Type_of_Request__c === 'Paydown of Loan' && res.Payoff_Paydown_Cancelled__c == false) && (res.Credit_Approved__c == false || res.Credit_Committee_Member_Approved__c == false)) && res.Method_of_Request__c === 'Customer Portal') {
+                    payOffInProgressMethodPortal++;
+                    payOffInProgressMethodPortalArray.push(res);
+                }
+                if(((res.Product_Category__c == 'Bridge' && res.Type_of_Request__c === 'Paydown of Loan' && res.Payoff_Paydown_Cancelled__c == false) && (res.Credit_Approved__c == false || res.Credit_Committee_Member_Approved__c == false))  && res.Method_of_Request__c === 'Website') {
+                    payOffInProgressMethodWebsite++;
+                    payOffInProgressMethodWebsiteArray.push(res);
+                }
+            }
+            if((res.Product_Category__c === 'Term' && res.Sent_to_Client_Clients_Team__c == false && res.Payoff_Paydown_Cancelled__c == false) || (res.Product_Category__c === 'Bridge' &&  res.Type_of_Request__c === 'Paydown of Loan' && res.Payoff_Paydown_Cancelled__c == false && res.Credit_Approved__c == true && res.Credit_Committee_Member_Approved__c == true && res.Sent_to_Client_Clients_Team__c == false)) {
+                payOffInProgressServicing++;
+                payOffInProgressServicingList.push(res);
+                if(((res.Product_Category__c === 'Term' && res.Sent_to_Client_Clients_Team__c == false && res.Payoff_Paydown_Cancelled__c == false) || (res.Product_Category__c === 'Bridge' &&  res.Type_of_Request__c === 'Paydown of Loan' && res.Payoff_Paydown_Cancelled__c == false && res.Credit_Approved__c == true && res.Credit_Committee_Member_Approved__c == true && res.Sent_to_Client_Clients_Team__c == false)) && res.Method_of_Request__c === 'Internal DORI Request') {
+                    payOffInServicingMethodDori++;
+                    payOffInServicingMethodDoriArray.push(res);
+                }
+                if(((res.Product_Category__c === 'Term' && res.Sent_to_Client_Clients_Team__c == false && res.Payoff_Paydown_Cancelled__c == false) || (res.Product_Category__c === 'Bridge' &&  res.Type_of_Request__c === 'Paydown of Loan' && res.Payoff_Paydown_Cancelled__c == false && res.Credit_Approved__c == true && res.Credit_Committee_Member_Approved__c == true && res.Sent_to_Client_Clients_Team__c == false))  && res.Method_of_Request__c === 'Customer Portal') {
+                    payOffInServicingMethodPortal++;
+                    payOffInServicingMethodPortalArray.push(res);
+                }
+                if(((res.Product_Category__c === 'Term' && res.Sent_to_Client_Clients_Team__c == false && res.Payoff_Paydown_Cancelled__c == false) || (res.Product_Category__c === 'Bridge' &&  res.Type_of_Request__c === 'Paydown of Loan' && res.Payoff_Paydown_Cancelled__c == false && res.Credit_Approved__c == true && res.Credit_Committee_Member_Approved__c == true && res.Sent_to_Client_Clients_Team__c == false))  && res.Method_of_Request__c === 'Website') {
+                    payOffInServicingMethodWebsite++;
+                    payOffInServicingMethodWebsiteArray.push(res);
+                }
+            }
+
+            if((createdDateMonth == currentMonth && createdDate.getUTCFullYear() == currentDate.getUTCFullYear()) && res.Sent_to_Client_Clients_Team__c == true) {
+                payOffCompletedThisMonth++;
+                payOffCompletedThisMonthList.push(res);
+                if((createdDateMonth == currentMonth && createdDate.getFullYear() == currentDate.getFullYear()) &&  res.Sent_to_Client_Clients_Team__c == true && res.Method_of_Request__c === 'Internal DORI Request') {
+                    payOffCompletedMonthDori++;
+                    payOffCompletedMonthDoriArray.push(res);
+                }
+                if((createdDateMonth == currentMonth && createdDate.getFullYear() == currentDate.getFullYear()) &&  res.Sent_to_Client_Clients_Team__c == true && res.Method_of_Request__c === 'Customer Portal') {
+                    payOffCompletedMonthPortal++;
+                    payOffCompletedMonthPortalArray.push(res);
+                }
+                if((createdDateMonth == currentMonth && createdDate.getFullYear() == currentDate.getFullYear()) &&  res.Sent_to_Client_Clients_Team__c == true && res.Method_of_Request__c === 'Website') {
+                    payOffCompletedMonthWebsite++;
+                    payOffCompletedMonthWebsiteArray.push(res);
+                }
+            }
+            if(createdDate.getUTCFullYear() == currentDate.getUTCFullYear() && res.Sent_to_Client_Clients_Team__c == true) {
+                payOffCompletedThisYear++;
+               payOffCompletedThisYearList.push(res);
+                if(createdDate.getUTCFullYear() == currentDate.getUTCFullYear() && res.Sent_to_Client_Clients_Team__c == true && res.Method_of_Request__c === 'Internal DORI Request') {
+                    payOffCompletedYearDori++;
+                    payOfCompletedYearDori.push(res);
+                }
+                if(createdDate.getUTCFullYear() == currentDate.getUTCFullYear() && res.Sent_to_Client_Clients_Team__c == true && res.Method_of_Request__c === 'Customer Portal') {
+                    payOffCompletedYearPortal++;
+                    payOffCompletedYearPortalArray.push(res);
+                }
+                if(createdDate.getUTCFullYear() == currentDate.getUTCFullYear() && res.Sent_to_Client_Clients_Team__c == true && res.Method_of_Request__c === 'Website') {
+                    payOffCompletedYearWebsite++;
+                    payOffCompletedYearWebsiteArray.push(res);
+                }
+            }
+            
+            
+        })
+        this.payOffLettersInProgress = payOffLettersInProgress;
+        this.creditRequest =  payOffLettersInProgress>1? 'Requests':'Request';
+        this.servicingRequest = payOffInProgressServicing>1?'Requests':'Request';
+        this.monthRequest = payOffCompletedThisMonth>1?'Requests':'Request';
+        this.yearRequest = payOffCompletedThisYear>1?'Requests':'Request';
+        this.payOffLettersInProgressServicing = payOffInProgressServicing;
+        this.payOffLettersCompletedThisMonth = payOffCompletedThisMonth;
+        this.payOffLettersCompletedThisYear = payOffCompletedThisYear;
+        
+        
+        this.payOffInProgressMethodDoriList = payOffInProgressMethodDoriArray;
+        this.payOffInProgressMethodPortalList = payOffInProgressMethodPortalArray;
+        this.payOffInProgressMethodWebsiteList = payOffInProgressMethodWebsiteArray;
+
+      
+       const progress = [payOffInProgressMethodDori, payOffInProgressMethodPortal, payOffInProgressMethodWebsite];
+        const servicing = [payOffInServicingMethodDori, payOffInServicingMethodPortal, payOffInServicingMethodWebsite];
+        const completedMonth = [payOffCompletedMonthDori, payOffCompletedMonthPortal, payOffCompletedMonthWebsite];
+        const completedYear = [payOffCompletedYearDori, payOffCompletedYearPortal, payOffCompletedYearWebsite];
+
+        function findMaxValue(arr) {
+            return Math.max(...arr);
+        }
+        
+        // Get the maximum values for each type
+        const maxValues = {
+            progressMax: findMaxValue(progress),
+            servicingMax: findMaxValue(servicing),
+            completedMonthMax: findMaxValue(completedMonth),
+            completedYearMax: findMaxValue(completedYear)
+        };
+
+        loadScript(this, this.highcharts)
+        .then(() => {
+            this.runHighcharts1(payOffInProgressMethodDori,payOffInProgressMethodPortal,payOffInProgressMethodWebsite, maxValues);
+            this.runHighcharts2(payOffInServicingMethodDori,payOffInServicingMethodPortal,payOffInServicingMethodWebsite, maxValues);
+            this.runHighcharts3(payOffCompletedMonthDori,payOffCompletedMonthPortal,payOffCompletedMonthWebsite, maxValues);
+            this.runHighcharts4(payOffCompletedYearDori,payOffCompletedYearPortal,payOffCompletedYearWebsite, maxValues);               
+        })
+        .catch(error => {
+            this.error = error;
+        });
+
+        this.payOffInServicingMethodDoriList = payOffInServicingMethodDoriArray;
+        this.payOffInServicingMethodPortalList = payOffInServicingMethodPortalArray;
+        this.payOffInServicingMethodWebsiteList = payOffInServicingMethodWebsiteArray;
+        
+
+        this.payOffLettersInProgressList = payOffLettersInProgressList;
+        this.payOffInProgressServicingList = payOffInProgressServicingList;
+        this.payOffCompletedThisMonthList = payOffCompletedThisMonthList;
+        this.payOffCompletedThisYearList = payOffCompletedThisYearList;
+
+        console.log('this.payOffLettersInProgressList------>'+this.payOffLettersInProgressList.length);
+        console.log('this.payOffInProgressServicingList------>'+this.payOffInProgressServicingList.length);
+        console.log(' this.payOffCompletedThisMonthListt------>'+ this.payOffCompletedThisMonthList.length);
+        console.log('this.payOffCompletedThisYearListt------>'+this.payOffCompletedThisYearList.length);
+
+
+        this.payOffCompletedMonthDoriList = payOffCompletedMonthDoriArray;
+        this.payOffCompletedMonthPortalList = payOffCompletedMonthPortalArray;
+        this.payOffCompletedMonthWebsiteList = payOffCompletedMonthWebsiteArray;
+
+
+        this.payOffCompletedYearDoriList = payOffCompletedYearPortalArray;
+        this.payOffCompletedYearPortalList = payOffCompletedYearPortalArray;
+        this.payOffCompletedYearWebsiteList = payOffCompletedYearWebsiteArray;
+       
+    }
+
+    openPopupForGraph(point) {
+        this.processing = true;
+        setTimeout(() => {
+            this.isTeamDataClicked = true;
+            this.processing = false;
+        }, 3000);
+        let selectedPayOffList = [];
+        if(!point.target) {
+            if(point.type == 'progress' && point.name == 'Internal Dori Request') {
+                selectedPayOffList = this.payOffInProgressMethodDoriList;
+                this.popupName = 'Requests Being Reviewed by Credit Internal Dori Request';
+            } else if(point.type == 'progress' && point.name == 'Customer Portal') {
+                selectedPayOffList = this.payOffInProgressMethodPortalList;
+                this.popupName = 'Requests Being Reviewed by Credit Customer Portal';
+            } else if(point.type == 'progress' && point.name == 'Website') {
+                selectedPayOffList = this.payOffInProgressMethodWebsiteList;
+                this.popupName = 'Requests Being Reviewed by Credit Website';
+            }
+            else if(point.type == 'servicing' && point.name == 'Internal Dori Request') {
+                selectedPayOffList = this.payOffInServicingMethodDoriList;
+                this.popupName = 'Requests "In Progress" with Servicing Internal Dori Request';
+            } else if(point.type == 'servicing' && point.name == 'Customer Portal') {
+                selectedPayOffList = this.payOffInServicingMethodPortalList;
+                this.popupName = 'Requests "In Progress" with Servicing Customer Portal';
+            } else if(point.type == 'servicing' && point.name == 'Website') {
+                selectedPayOffList = this.payOffInServicingMethodWebsiteList;
+                this.popupName = 'Requests "In Progress" with Servicing Website';
+            }else if(point.type == 'completedMonth' && point.name == 'Internal Dori Request') {
+                selectedPayOffList = this.payOffCompletedMonthDoriList;
+                this.popupName = 'Requests Completed This Month Internal Dori Request';
+            } else if(point.type == 'completedMonth' && point.name == 'Customer Portal') {
+                selectedPayOffList = this.payOffCompletedMonthPortalList;
+                this.popupName = 'Requests Completed This Month Customer Portal';
+            } else if(point.type == 'completedMonth' && point.name == 'Website') {
+                selectedPayOffList = this.payOffCompletedMonthWebsiteList;
+                this.popupName = 'Requests Completed This Month Website';
+            }else if(point.type == 'completedYear' && point.name == 'Internal Dori Request') {
+                selectedPayOffList = this.payOffCompletedYearDoriList;
+                this.popupName = 'Requests Completed This Year Internal Dori Request';
+            } else if(point.type == 'completedYear' && point.name == 'Customer Portal') {
+                selectedPayOffList = this.payOffCompletedYearPortalList;
+                this.popupName = 'Requests Completed This Year Customer Portal';
+            } else if(point.type == 'completedYear' && point.name == 'Website') {
+                selectedPayOffList = this.payOffCompletedYearWebsiteList;   
+                this.popupName = 'Requests Completed This Year Website';
+            }
+        }else {
+            let elementId = point.currentTarget.dataset.id;
+            if(elementId == 'payOffProgress') {
+                selectedPayOffList = this.payOffLettersInProgressList;
+                this.popupName = 'Requests Being Reviewed by Credit';
+            }else if(elementId == 'payOffServicing') {
+                selectedPayOffList = this.payOffInProgressServicingList;
+                this.popupName = 'Requests "In Progress" with Servicing';
+            }else if(elementId == 'payOffMonth') {
+                selectedPayOffList = this.payOffCompletedThisMonthList;
+                this.popupName = 'Requests Completed This Month';
+            }else if(elementId == 'payOffYear') {
+                selectedPayOffList = this.payOffCompletedThisYearList;
+                this.popupName = 'Requests Completed This Year';
+            }
+        }
+        this.popDataCount = selectedPayOffList.length;
+        this.isDataPresent = selectedPayOffList.length>0;
+        this.popupDataList = selectedPayOffList.map(record => {
+            return Object.assign(
+                {"recordIdUrl":'/'+record.Id},
+                {"recordIdName":record.Name},
+                {"Guarantor1Name":record.Opportunity_Name__r.Borrower__r?.Name},
+                {"Guarantor1url":record.Opportunity_Name__r.Borrower__c?'/'+record. Opportunity_Name__r.Borrower__c:''},
+                {"InternalRequestorUrl":record.Internal_Requestor__c?'/'+record.Internal_Requestor__c:''},
+                {"InternalRequestorName":record.Internal_Requestor__r?.Name},
+                record
+            )
+        });
+    }
+
+    hideModalBox() {
+        this.isTeamDataClicked = false;
+    }
+    
+}
